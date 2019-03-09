@@ -1,7 +1,7 @@
 ocbuild
 =======
 
-*** This is still a work in progress and should NOT be used for the time being! ***
+***This is still a work in progress and should NOT be used for the time being!***
 
 The tool designed to build, package, and manage UEFI UDK packages in [acidanthera](https://github.com/acidanthera).
 
