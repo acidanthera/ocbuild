@@ -78,20 +78,6 @@ if [ "$(which mtoc.NEW)" == "" ] || [ "$(which mtoc)" == "" ]; then
   popd >/dev/null
 fi
 
-if [ ! -d "Binaries" ]; then
-  mkdir Binaries || exit 1
-  cd Binaries || exit 1
-  ln -s ../UDK/Build/"${SELFPKG}"/RELEASE_XCODE5/X64 RELEASE || exit 1
-  ln -s ../UDK/Build/"${SELFPKG}"/DEBUG_XCODE5/X64 DEBUG || exit 1
-  ln -s ../UDK/Build/"${SELFPKG}"/NOOPT_XCODE5/X64 NOOPT || exit 1
-  cd .. || exit 1
-fi
-
-SKIP_TESTS=0
-SKIP_BUILD=0
-SKIP_PACKAGE=0
-MODE=""
-
 if [ "$ARCHS" = "" ]; then
   ARCHS=('X64')
 fi
@@ -99,6 +85,19 @@ fi
 if [ "$TOOLCHAINS" = "" ]; then
   TOOLCHAINS=('XCODE5')
 fi
+
+if [ "$TARGETS" = "" ]; then
+  TARGETS=('DEBUG' 'RELEASE' 'NOOPT')
+fi
+
+if [ "$RTARGETS" = "" ]; then
+  RTARGETS=('DEBUG' 'RELEASE')
+fi
+
+SKIP_TESTS=0
+SKIP_BUILD=0
+SKIP_PACKAGE=0
+MODE=""
 
 while true; do
   if [ "$1" == "--skip-tests" ]; then
@@ -118,6 +117,17 @@ done
 if [ "$1" != "" ]; then
   MODE="$1"
   shift
+fi
+
+echo "Primary toolchain ${TOOLCHAINS[0]} and arch ${ARCHS[0]}"
+
+if [ ! -d "Binaries" ]; then
+  mkdir Binaries || exit 1
+  cd Binaries || exit 1
+  for target in ${TARGETS[@]}; do
+    ln -s ../UDK/Build/"${SELFPKG}/${target}_${TOOLCHAINS[0]}/${ARCHS[0]}" "${target}" || exit 1
+  done
+  cd .. || exit 1
 fi
 
 if [ ! -f UDK/UDK.ready ]; then
@@ -154,17 +164,11 @@ if [ "$SKIP_BUILD" != "1" ]; then
   echo "Building..."
   for arch in ${ARCHS[@]} ; do
     for toolchain in ${TOOLCHAINS[@]}; do
-      if [ "$MODE" = "" ] || [ "$MODE" = "DEBUG" ]; then
-        build -a "$arch" -b DEBUG -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || exit 1
-      fi
-
-      if [ "$MODE" = "" ] || [ "$MODE" = "DEBUG" ]; then
-        build -a "$arch" -b NOOPT -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || exit 1
-      fi
-
-      if [ "$MODE" = "" ] || [ "$MODE" = "RELEASE" ]; then
-        build -a "$arch" -b RELEASE -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || exit 1
-      fi
+      for target in ${TARGETS[@]}; do
+        if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
+          build -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || exit 1
+        fi
+      done
     done
   done
 fi
@@ -174,12 +178,10 @@ cd .. || exit 1
 if [ "$(type -t package)" = "function" ]; then
   if [ "$SKIP_PACKAGE" != "1" ]; then
     echo "Packaging..."
-    if [ "$PACKAGE" = "" ] || [ "$PACKAGE" = "DEBUG" ]; then
-      package "Binaries/DEBUG" "DEBUG" || exit 1
-    fi
-
-    if [ "$PACKAGE" = "" ] || [ "$PACKAGE" = "RELEASE" ]; then
-      package "Binaries/RELEASE" "RELEASE" || exit 1
-    fi
+    for rtarget in ${RTARGETS[@]}; do
+      if [ "$PACKAGE" = "" ] || [ "$PACKAGE" = "$rtarget" ]; then
+        package "Binaries/$rtarget" "$rtarget" || exit 1
+      fi
+    done
   fi
 fi
