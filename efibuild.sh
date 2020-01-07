@@ -3,12 +3,7 @@
 unset WORKSPACE
 unset PACKAGES_PATH
 
-BUILDDIR=$(dirname "$0")
-pushd "$BUILDDIR" >/dev/null
 BUILDDIR=$(pwd)
-popd >/dev/null
-
-cd "$BUILDDIR"
 
 prompt() {
   echo "$1"
@@ -150,13 +145,15 @@ fi
 source edksetup.sh || exit 1
 
 if [ "$SKIP_TESTS" != "1" ]; then
-  make -C BaseTools || exit 1
+  echo "Testing..."
+  make -C BaseTools -j || exit 1
   touch UDK.ready
 fi
 
-for arch in ${ARCHS[@]} ; do
-  for toolchain in ${TOOLCHAINS[@]}; do
-    if [ "$SKIP_BUILD" != "1" ]; then
+if [ "$SKIP_BUILD" != "1" ]; then
+  echo "Building..."
+  for arch in ${ARCHS[@]} ; do
+    for toolchain in ${TOOLCHAINS[@]}; do
       if [ "$MODE" = "" ] || [ "$MODE" = "DEBUG" ]; then
         build -a "$arch" -b DEBUG -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || exit 1
       fi
@@ -168,14 +165,15 @@ for arch in ${ARCHS[@]} ; do
       if [ "$MODE" = "" ] || [ "$MODE" = "RELEASE" ]; then
         build -a "$arch" -b RELEASE -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || exit 1
       fi
-    fi
+    done
   done
-done
+fi
 
 cd .. || exit 1
 
 if [ "$(type -t package)" = "function" ]; then
   if [ "$SKIP_PACKAGE" != "1" ]; then
+    echo "Packaging..."
     if [ "$PACKAGE" = "" ] || [ "$PACKAGE" = "DEBUG" ]; then
       package "Binaries/DEBUG" "DEBUG" || exit 1
     fi
