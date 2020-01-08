@@ -78,6 +78,10 @@ if [ "$(which mtoc.NEW)" == "" ] || [ "$(which mtoc)" == "" ]; then
   popd >/dev/null
 fi
 
+if [ "$RELPKG" = "" ]; then
+  RELPKG="$SELFPKG"
+fi
+
 if [ "$ARCHS" = "" ]; then
   ARCHS=('X64')
 fi
@@ -129,7 +133,7 @@ if [ ! -d "Binaries" ]; then
   mkdir Binaries || exit 1
   cd Binaries || exit 1
   for target in ${TARGETS[@]}; do
-    ln -s ../UDK/Build/"${SELFPKG}/${target}_${TOOLCHAINS[0]}/${ARCHS[0]}" "${target}" || exit 1
+    ln -s ../UDK/Build/"${RELPKG}/${target}_${TOOLCHAINS[0]}/${ARCHS[0]}" "${target}" || exit 1
   done
   cd .. || exit 1
 fi
