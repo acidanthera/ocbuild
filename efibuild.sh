@@ -83,7 +83,11 @@ if [ "$ARCHS" = "" ]; then
 fi
 
 if [ "$TOOLCHAINS" = "" ]; then
-  TOOLCHAINS=('XCODE5')
+  if [ "$(uname)" = "Darwin" ]; then
+    TOOLCHAINS=('XCODE5')
+  else
+    TOOLCHAINS=('CLANGPDB' 'GCC5')
+  fi
 fi
 
 if [ "$TARGETS" = "" ]; then
@@ -142,6 +146,18 @@ fi
 
 updaterepo "https://github.com/acidanthera/audk" UDK master || exit 1
 cd UDK
+HASH=$(git rev-parse origin/master)
+
+if [ -d ../Patches ]; then
+  if [ ! -f patches.ready ]; then
+    for i in ../Patches/* ; do
+      git apply "$i" || exit 1
+      git add * || exit 1
+      git commit -m "Applied patch $i" || exit 1
+    done
+    touch patches.ready
+  fi
+fi
 
 deps="${#DEPNAMES[@]}"
 for ((i=0; $i<$deps; i++)); do
@@ -180,7 +196,7 @@ if [ "$(type -t package)" = "function" ]; then
     echo "Packaging..."
     for rtarget in ${RTARGETS[@]}; do
       if [ "$PACKAGE" = "" ] || [ "$PACKAGE" = "$rtarget" ]; then
-        package "Binaries/$rtarget" "$rtarget" || exit 1
+        package "Binaries/$rtarget" "$rtarget" "$HASH" || exit 1
       fi
     done
   fi
