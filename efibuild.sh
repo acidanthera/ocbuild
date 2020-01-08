@@ -151,7 +151,7 @@ HASH=$(git rev-parse origin/master)
 if [ -d ../Patches ]; then
   if [ ! -f patches.ready ]; then
     for i in ../Patches/* ; do
-      git apply "$i" || exit 1
+      git apply --ignore-whitespace "$i" || exit 1
       git add * || exit 1
       git commit -m "Applied patch $i" || exit 1
     done
