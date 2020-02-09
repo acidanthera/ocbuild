@@ -143,7 +143,8 @@ if [ ! -f UDK/UDK.ready ]; then
 
   sym=$(find . -not -type d -exec file "{}" ";" | grep CRLF)
   if [ "${sym}" != "" ]; then
-    echo "Repository CRLF line endings"
+    echo "Error: the following files in the repository CRLF line endings:"
+    echo "$sym"
     exit 1
   fi
 fi
