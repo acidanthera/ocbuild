@@ -25,6 +25,7 @@ updaterepo() {
     sym=$(find . -not -type d -exec file "{}" ";" | grep CRLF)
     if [ "${sym}" != "" ]; then
       echo "Repository $1 named $2 contains CRLF line endings"
+      echo "$sym"
       exit 1
     fi
   fi
