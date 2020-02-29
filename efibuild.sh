@@ -32,6 +32,12 @@ updaterepo() {
   popd >/dev/null
 }
 
+abortbuild() {
+  echo "Build failed!"
+  cat build.log
+  exit 1
+}
+
 if [ "${SELFPKG}" = "" ]; then
   echo "You are required to set SELFPKG variable!"
   exit 1
@@ -188,7 +194,7 @@ if [ "$SKIP_BUILD" != "1" ]; then
     for toolchain in ${TOOLCHAINS[@]}; do
       for target in ${TARGETS[@]}; do
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
-          build -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || exit 1
+          build -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" &> build.log || abortbuild
         fi
       done
     done
