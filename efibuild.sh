@@ -34,7 +34,7 @@ updaterepo() {
 
 abortbuild() {
   echo "Build failed!"
-  cat build.log
+  tail -500 build.log
   exit 1
 }
 
