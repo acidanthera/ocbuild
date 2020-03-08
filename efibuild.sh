@@ -194,6 +194,7 @@ if [ "$SKIP_BUILD" != "1" ]; then
     for toolchain in ${TOOLCHAINS[@]}; do
       for target in ${TARGETS[@]}; do
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
+          echo "Building ${SELFPKG}/${SELFPKG}.dsc for $arch in $target with ${toolchain}..."
           build -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" &> build.log || abortbuild
         fi
       done
