@@ -71,17 +71,16 @@ if [ "$(nasm -v)" = "" ] || [ "$(nasm -v | grep Apple)" != "" ]; then
   popd >/dev/null
 fi
 
-if [ "$(which mtoc.NEW)" == "" ] || [ "$(which mtoc)" == "" ]; then
-  echo "Missing mtoc or mtoc.NEW!"
+if [ "$(which mtoc)" == "" ]; then
+  echo "Missing mtoc!"
   echo "To build mtoc follow: https://github.com/tianocore/tianocore.github.io/wiki/Xcode#mac-os-x-xcode"
-  prompt "Install prebuilt mtoc and mtoc.NEW automatically?"
+  prompt "Install prebuilt mtoc automatically?"
   pushd /tmp >/dev/null
   rm -f mtoc mtoc-mac64.zip
   curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/mtoc-mac64.zip" || exit 1
   unzip -q mtoc-mac64.zip mtoc || exit 1
   sudo mkdir -p /usr/local/bin || exit 1
   sudo cp mtoc /usr/local/bin/mtoc || exit 1
-  sudo mv mtoc /usr/local/bin/mtoc.NEW || exit 1
   popd >/dev/null
 fi
 
