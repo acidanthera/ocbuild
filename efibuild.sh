@@ -81,7 +81,7 @@ if [ "$(which mtoc)" == "" ]; then
   mtoczip=$(cat mtoc-mac64.zip)
   rm -rf mtoc-*
   curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/${mtoczip}" || exit 1
-  unzip -q mtoc-mac64.zip mtoc || exit 1
+  unzip -q "${mtoczip}" mtoc || exit 1
   sudo mkdir -p /usr/local/bin || exit 1
   sudo cp mtoc /usr/local/bin/mtoc || exit 1
   popd >/dev/null
