@@ -45,6 +45,7 @@ cd "${CCTOOLS_DIR}"                                      || abort "Cannot switch
 patch -p1 < "${SRC_DIR}/patches/mtoc-permissions.patch"  || abort "Cannot apply mtoc-permissions.patch"
 make LTO= EFITOOLS=efitools -C libstuff                  || abort "Cannot build libstuff"
 make -C efitools                                         || abort "Cannot build efitools"
+strip -x "${CCTOOLS_DIR}/efitools/mtoc.NEW"              || abort "Cannot strip mtoc"
 mkdir "${DIST_DIR}"                                      || abort "Cannot create dist dir ${DIST_DIR}"
 cd "${DIST_DIR}"                                         || abort "Cannot switch to dist dir ${DIST_DIR}"
 cp "${CCTOOLS_DIR}/efitools/mtoc.NEW" "${DIST_DIR}/mtoc" || abort "Cannot copy mtoc to ${DIST_DIR}"
