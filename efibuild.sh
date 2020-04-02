@@ -38,6 +38,10 @@ abortbuild() {
   exit 1
 }
 
+buildme() {
+  build "$@" &> build.log
+}
+
 if [ "${SELFPKG}" = "" ]; then
   echo "You are required to set SELFPKG variable!"
   exit 1
@@ -197,7 +201,11 @@ if [ "$SKIP_BUILD" != "1" ]; then
       for target in ${TARGETS[@]}; do
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
           echo "Building ${SELFPKG}/${SELFPKG}.dsc for $arch in $target with ${toolchain}..."
-          build -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" &> build.log || abortbuild
+          if declare -f travis_wait; then
+            travis_wait 60 buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || abortbuild
+          else
+            buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || abortbuild
+          fi
         fi
       done
     done
