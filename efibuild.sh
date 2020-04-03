@@ -38,8 +38,32 @@ abortbuild() {
   exit 1
 }
 
+pingme() {
+  local timeout=60 # in minutes
+  local count=0
+  local cmd_pid=$1
+  shift
+
+  while [ $count -lt $timeout ]; do
+    count=$(($count + 1))
+    printf "."
+    sleep 60
+  done
+
+  echo "\n\033[31;1mTimeout reached. Terminating $@.\033[0m"
+  kill -9 $cmd_pid
+}
+
 buildme() {
-  build "$@" &> build.log
+  build "$@" &
+  local cmd_pid=$!
+
+  pingme $! build "$@" &
+  local mon_pid=$!
+  local result
+
+  { wait $cmd_pid 2>/dev/null; result=$?; ps -p$mon_pid 2>&1>/dev/null && kill $mon_pid; } || return 1
+  return $result
 }
 
 if [ "${SELFPKG}" = "" ]; then
@@ -201,13 +225,7 @@ if [ "$SKIP_BUILD" != "1" ]; then
       for target in ${TARGETS[@]}; do
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
           echo "Building ${SELFPKG}/${SELFPKG}.dsc for $arch in $target with ${toolchain}..."
-          if [ "$(which travis_wait)" != "" ] || [ -n "$(LC_ALL=C type -t travis_wait)" ]; then
-            echo "Using travis_wait for compilation..."
-            travis_wait 60 buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || abortbuild
-          else
-            echo "Using direct compilation..."
-            buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || abortbuild
-          fi
+          buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || abortbuild
         fi
       done
     done
