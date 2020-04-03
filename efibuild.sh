@@ -55,7 +55,7 @@ pingme() {
 }
 
 buildme() {
-  build "$@" &
+  build "$@" 2>&1>build.log &
   local cmd_pid=$!
 
   pingme $! build "$@" &
