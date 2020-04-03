@@ -201,7 +201,7 @@ if [ "$SKIP_BUILD" != "1" ]; then
       for target in ${TARGETS[@]}; do
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
           echo "Building ${SELFPKG}/${SELFPKG}.dsc for $arch in $target with ${toolchain}..."
-          if [ "$(which travis_wait)" != "" ]; then
+          if [ "$(which travis_wait)" != "" ] || [ -n "$(LC_ALL=C type -t travis_wait)" ]; then
             echo "Using travis_wait for compilation..."
             travis_wait 60 buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || abortbuild
           else
