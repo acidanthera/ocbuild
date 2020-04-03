@@ -39,7 +39,7 @@ abortbuild() {
 }
 
 pingme() {
-  local timeout=60 # in minutes
+  local timeout=200 # in 30s
   local count=0
   local cmd_pid=$1
   shift
@@ -47,7 +47,7 @@ pingme() {
   while [ $count -lt $timeout ]; do
     count=$(($count + 1))
     printf "."
-    sleep 60
+    sleep 30
   done
 
   echo "\n\033[31;1mTimeout reached. Terminating $@.\033[0m"
@@ -226,6 +226,7 @@ if [ "$SKIP_BUILD" != "1" ]; then
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
           echo "Building ${SELFPKG}/${SELFPKG}.dsc for $arch in $target with ${toolchain}..."
           buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || abortbuild
+          echo " - OK"
         fi
       done
     done
