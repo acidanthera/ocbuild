@@ -53,7 +53,7 @@ cp "${CCTOOLS_DIR}/efitools/mtoc.NEW" "${DIST_DIR}/mtoc" || abort "Cannot copy m
 zip -qry "${SRC_DIR}/external/${MTOC_ARCHIVE}" mtoc      || abort "Cannot archive mtoc into ${MTOC_ARCHIVE}"
 cd "${SRC_DIR}/external"                                 || abort "Cannot switch to ${SRC_DIR}/external"
 ln -s "${MTOC_ARCHIVE}" "${MTOC_LATEST_ARCHIVE}"         || abort "Cannot update ${MTOC_LATEST_ARCHIVE} symlink"
-shasum -a sha256 "${DIST_DIR}/mtoc" | cut -d' ' -f1 > "${SRC_DIR}/external/${MTOC_LATEST_HASH}" || abort "Cannot update hash"
+shasum -a 256 "${DIST_DIR}/mtoc" | cut -d' ' -f1 > "${SRC_DIR}/external/${MTOC_LATEST_HASH}" || abort "Cannot update hash"
 
 echo "Done, do not forget to commit the changes!"
 prompt "Update current installed mtoc?"
