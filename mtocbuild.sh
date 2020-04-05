@@ -6,6 +6,7 @@ CCTOOLS_ARCHIVE=${CCTOOLS_NAME}.tar.gz
 CCTOOLS_LINK=https://opensource.apple.com/tarballs/cctools/${CCTOOLS_ARCHIVE}
 MTOC_ARCHIVE="mtoc-${CCTOOLS_VERSION}-macosx.zip"
 MTOC_LATEST_ARCHIVE="mtoc-mac64.zip"
+MTOC_LATEST_HASH="mtoc-mac64.sha256"
 
 SRC_DIR=$(dirname "$0")
 pushd "$SRC_DIR" &>/dev/null
@@ -52,6 +53,7 @@ cp "${CCTOOLS_DIR}/efitools/mtoc.NEW" "${DIST_DIR}/mtoc" || abort "Cannot copy m
 zip -qry "${SRC_DIR}/external/${MTOC_ARCHIVE}" mtoc      || abort "Cannot archive mtoc into ${MTOC_ARCHIVE}"
 cd "${SRC_DIR}/external"                                 || abort "Cannot switch to ${SRC_DIR}/external"
 ln -s "${MTOC_ARCHIVE}" "${MTOC_LATEST_ARCHIVE}"         || abort "Cannot update ${MTOC_LATEST_ARCHIVE} symlink"
+openssl sha256 "${DIST_DIR}/mtoc" | cut -d' ' -f2 > "${SRC_DIR}/external/${MTOC_LATEST_HASH}" || abort "Cannot update hash"
 
 echo "Done, do not forget to commit the changes!"
 prompt "Update current installed mtoc?"
