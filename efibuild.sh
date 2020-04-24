@@ -230,6 +230,8 @@ HASH=$(git rev-parse origin/master)
 
 if [ -d ../Patches ]; then
   if [ ! -f patches.ready ]; then
+    git config user.name ocbuild
+    git config user.email ocbuild@acidanthera.local
     for i in ../Patches/* ; do
       git apply --ignore-whitespace "$i" || exit 1
       git add * || exit 1
