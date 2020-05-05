@@ -84,7 +84,12 @@ fi
 if [ "$(nasm -v)" = "" ] || [ "$(nasm -v | grep Apple)" != "" ]; then
   echo "Missing or incompatible nasm!"
   echo "Download the latest nasm from http://www.nasm.us/pub/nasm/releasebuilds/"
-  prompt "Install last tested version automatically?"
+  # On Darwin we can install prebuilt nasm. On Linux let users handle it.
+  if [ "$(uname)" = "Darwin" ]; then
+    prompt "Install last tested version automatically?"
+  else
+    exit 1
+  fi
   pushd /tmp >/dev/null
   rm -rf nasm-mac64.zip
   curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/nasm-mac64.zip" || exit 1
@@ -106,7 +111,13 @@ if [ "${mtoc_hash}" = "" ]; then
   exit 1
 fi
 
-valid_mtoc=false
+# On Darwin we need mtoc. Only for XCODE5, but do not care for now.
+if [ "$(uname)" = "Darwin" ]; then
+  valid_mtoc=false
+else
+  valid_mtoc=true
+fi
+
 if [ "$(which mtoc)" != "" ]; then
   mtoc_path=$(which mtoc)
   mtoc_hash_user=$(shasum -a 256 "${mtoc_path}" | cut -d' ' -f1)
