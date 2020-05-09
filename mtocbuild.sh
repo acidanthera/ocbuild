@@ -9,9 +9,9 @@ MTOC_LATEST_ARCHIVE="mtoc-mac64.zip"
 MTOC_LATEST_HASH="mtoc-mac64.sha256"
 
 SRC_DIR=$(dirname "$0")
-pushd "$SRC_DIR" &>/dev/null
+pushd "$SRC_DIR" &>/dev/null || exit 1
 SRC_DIR="$(pwd)"
-popd &>/dev/null
+popd &>/dev/null || exit 1
 
 BUILD_DIR="/tmp/cctools.$(uuidgen)"
 CCTOOLS_DIR="${BUILD_DIR}/${CCTOOLS_NAME}"
@@ -19,7 +19,7 @@ DIST_DIR="${BUILD_DIR}/dist"
 
 quit() {
   rm -rf "${BUILD_DIR}"
-  exit $1
+  exit "$1"
 }
 
 abort() {
@@ -30,7 +30,7 @@ abort() {
 prompt() {
   echo "$1"
   if [ "$FORCE_INSTALL" != "1" ]; then
-    read -p "Enter [Y]es to continue: " v
+    read -rp "Enter [Y]es to continue: " v
     if [ "$v" != "Y" ] && [ "$v" != "y" ]; then
       quit 0
     fi
