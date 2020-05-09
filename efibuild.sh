@@ -8,7 +8,7 @@ BUILDDIR=$(pwd)
 prompt() {
   echo "$1"
   if [ "$FORCE_INSTALL" != "1" ]; then
-    read -p "Enter [Y]es to continue: " v
+    read -rp "Enter [Y]es to continue: " v
     if [ "$v" != "Y" ] && [ "$v" != "y" ]; then
       exit 1
     fi
@@ -19,7 +19,7 @@ updaterepo() {
   if [ ! -d "$2" ]; then
     git clone "$1" -b "$3" --depth=1 "$2" || exit 1
   fi
-  pushd "$2" >/dev/null
+  pushd "$2" >/dev/null || exit 1
   git pull
   if [ "$2" != "UDK" ]; then
     sym=$(find . -not -type d -exec file "{}" ";" | grep CRLF)
@@ -29,7 +29,7 @@ updaterepo() {
       exit 1
     fi
   fi
-  popd >/dev/null
+  popd >/dev/null || exit 1
 }
 
 abortbuild() {
@@ -45,23 +45,33 @@ pingme() {
   shift
 
   while [ $count -lt $timeout ]; do
-    count=$(($count + 1))
+    count=$(( count + 1 ))
     printf "."
     sleep 30
   done
 
+  ## ShellCheck Exception(s)
+  ## https://github.com/koalaman/shellcheck/wiki/SC2028
+  ## https://github.com/koalaman/shellcheck/wiki/SC2145
+  # shellcheck disable=SC2028,SC2145
   echo "\n\033[31;1mTimeout reached. Terminating $@.\033[0m"
-  kill -9 $cmd_pid
+  kill -9 "${cmd_pid}"
 }
 
 buildme() {
-  build "$@" &>build.log &
-  local cmd_pid=$!
-
-  pingme $! build "$@" &
-  local mon_pid=$!
+  local cmd_pid
+  local mon_pid
   local result
 
+  build "$@" &>build.log &
+  cmd_pid=$!
+
+  pingme $! build "$@" &
+  mon_pid=$!
+
+  ## ShellCheck Exception(s)
+  ## https://github.com/koalaman/shellcheck/wiki/SC2069
+  # shellcheck disable=SC2069
   { wait $cmd_pid 2>/dev/null; result=$?; ps -p$mon_pid 2>&1>/dev/null && kill $mon_pid; } || return 1
   return $result
 }
@@ -71,12 +81,12 @@ if [ "${SELFPKG}" = "" ]; then
   exit 1
 fi
 
-if [ "${BUILDDIR}" != "$(printf "%s\n" ${BUILDDIR})" ]; then
+if [ "${BUILDDIR}" != "$(printf "%s\n" "${BUILDDIR}")" ] ; then
   echo "EDK2 build system may still fail to support directories with spaces!"
   exit 1
 fi
 
-if [ "$(which clang)" = "" ] || [ "$(which git)" = "" ] || [ "$(clang -v 2>&1 | grep "no developer")" != "" ] || [ "$(git -v 2>&1 | grep "no developer")" != "" ]; then
+if [ "$(command -v clang)" = "" ] || [ "$(command -v git)" = "" ] || [ "$(clang -v 2>&1 | grep "no developer")" != "" ] || [ "$(git -v 2>&1 | grep "no developer")" != "" ]; then
   echo "Missing Xcode tools, please install them!"
   exit 1
 fi
@@ -90,7 +100,7 @@ if [ "$(nasm -v)" = "" ] || [ "$(nasm -v | grep Apple)" != "" ]; then
   else
     exit 1
   fi
-  pushd /tmp >/dev/null
+  pushd /tmp >/dev/null || exit 1
   rm -rf nasm-mac64.zip
   curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/nasm-mac64.zip" || exit 1
   nasmzip=$(cat nasm-mac64.zip)
@@ -101,7 +111,7 @@ if [ "$(nasm -v)" = "" ] || [ "$(nasm -v | grep Apple)" != "" ]; then
   sudo mv nasm*/nasm /usr/local/bin/ || exit 1
   sudo mv nasm*/ndisasm /usr/local/bin/ || exit 1
   rm -rf "${nasmzip}" nasm-*
-  popd >/dev/null
+  popd >/dev/null || exit 1
 fi
 
 mtoc_hash=$(curl -L "https://github.com/acidanthera/ocbuild/raw/master/external/mtoc-mac64.sha256") || exit 1
@@ -118,8 +128,8 @@ else
   valid_mtoc=true
 fi
 
-if [ "$(which mtoc)" != "" ]; then
-  mtoc_path=$(which mtoc)
+if [ "$(command -v mtoc)" != "" ]; then
+  mtoc_path=$(command -v mtoc)
   mtoc_hash_user=$(shasum -a 256 "${mtoc_path}" | cut -d' ' -f1)
   if [ "${mtoc_hash}" = "${mtoc_hash_user}" ]; then
     valid_mtoc=true
@@ -142,7 +152,7 @@ if ! $valid_mtoc; then
   echo "Missing or incompatible mtoc!"
   echo "To build mtoc follow: https://github.com/tianocore/tianocore.github.io/wiki/Xcode#mac-os-x-xcode"
   prompt "Install prebuilt mtoc automatically?"
-  pushd /tmp >/dev/null
+  pushd /tmp >/dev/null || exit 1
   rm -f mtoc mtoc-mac64.zip
   curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/mtoc-mac64.zip" || exit 1
   mtoczip=$(cat mtoc-mac64.zip)
@@ -152,9 +162,9 @@ if ! $valid_mtoc; then
   sudo mkdir -p /usr/local/bin || exit 1
   sudo rm -f /usr/local/bin/mtoc /usr/local/bin/mtoc.NEW || exit 1
   sudo cp mtoc /usr/local/bin/mtoc || exit 1
-  popd >/dev/null
+  popd >/dev/null || exit 1
 
-  mtoc_path=$(which mtoc)
+  mtoc_path=$(command -v mtoc)
   mtoc_hash_user=$(shasum -a 256 "${mtoc_path}" | cut -d' ' -f1)
   if [ "${mtoc_hash}" != "${mtoc_hash_user}" ]; then
     echo "Failed to install a compatible version of mtoc!"
@@ -218,7 +228,7 @@ echo "Primary toolchain ${TOOLCHAINS[0]} and arch ${ARCHS[0]}"
 if [ ! -d "Binaries" ]; then
   mkdir Binaries || exit 1
   cd Binaries || exit 1
-  for target in ${TARGETS[@]}; do
+  for target in "${TARGETS[@]}" ; do
     ln -s ../UDK/Build/"${RELPKG}/${target}_${TOOLCHAINS[0]}/${ARCHS[0]}" "${target}" || exit 1
   done
   cd .. || exit 1
@@ -236,7 +246,7 @@ if [ ! -f UDK/UDK.ready ]; then
 fi
 
 updaterepo "https://github.com/acidanthera/audk" UDK master || exit 1
-cd UDK
+cd UDK || exit 1
 HASH=$(git rev-parse origin/master)
 
 if [ -d ../Patches ]; then
@@ -245,7 +255,7 @@ if [ -d ../Patches ]; then
     git config user.email ocbuild@acidanthera.local
     for i in ../Patches/* ; do
       git apply --ignore-whitespace "$i" || exit 1
-      git add * || exit 1
+      git add .
       git commit -m "Applied patch $i" || exit 1
     done
     touch patches.ready
@@ -253,7 +263,7 @@ if [ -d ../Patches ]; then
 fi
 
 deps="${#DEPNAMES[@]}"
-for ((i=0; $i<$deps; i++)); do
+for (( i=0; i<deps; i++ )) ; do
   updaterepo "${DEPURLS[$i]}" "${DEPNAMES[$i]}" "${DEPBRANCHES[$i]}" || exit 1
 done
 
@@ -271,9 +281,9 @@ fi
 
 if [ "$SKIP_BUILD" != "1" ]; then
   echo "Building..."
-  for arch in ${ARCHS[@]} ; do
-    for toolchain in ${TOOLCHAINS[@]}; do
-      for target in ${TARGETS[@]}; do
+  for arch in "${ARCHS[@]}" ; do
+    for toolchain in "${TOOLCHAINS[@]}" ; do
+      for target in "${TARGETS[@]}" ; do
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
           echo "Building ${SELFPKG}/${SELFPKG}.dsc for $arch in $target with ${toolchain}..."
           buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || abortbuild
@@ -289,7 +299,7 @@ cd .. || exit 1
 if [ "$(type -t package)" = "function" ]; then
   if [ "$SKIP_PACKAGE" != "1" ]; then
     echo "Packaging..."
-    for rtarget in ${RTARGETS[@]}; do
+    for rtarget in "${RTARGETS[@]}" ; do
       if [ "$PACKAGE" = "" ] || [ "$PACKAGE" = "$rtarget" ]; then
         package "Binaries/$rtarget" "$rtarget" "$HASH" || exit 1
       fi
