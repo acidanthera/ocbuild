@@ -86,7 +86,7 @@ if [ "${BUILDDIR}" != "$(printf "%s\n" "${BUILDDIR}")" ] ; then
   exit 1
 fi
 
-if [ "$(command -v clang)" = "" ] || [ "$(command -v git)" = "" ] || [ "$(clang -v 2>&1 | grep "no developer")" != "" ] || [ "$(git -v 2>&1 | grep "no developer")" != "" ]; then
+if [ "$(which clang)" = "" ] || [ "$(which git)" = "" ] || [ "$(clang -v 2>&1 | grep "no developer")" != "" ] || [ "$(git -v 2>&1 | grep "no developer")" != "" ]; then
   echo "Missing Xcode tools, please install them!"
   exit 1
 fi
@@ -128,8 +128,8 @@ else
   valid_mtoc=true
 fi
 
-if [ "$(command -v mtoc)" != "" ]; then
-  mtoc_path=$(command -v mtoc)
+if [ "$(which mtoc)" != "" ]; then
+  mtoc_path=$(which mtoc)
   mtoc_hash_user=$(shasum -a 256 "${mtoc_path}" | cut -d' ' -f1)
   if [ "${mtoc_hash}" = "${mtoc_hash_user}" ]; then
     valid_mtoc=true
@@ -164,7 +164,7 @@ if ! $valid_mtoc; then
   sudo cp mtoc /usr/local/bin/mtoc || exit 1
   popd >/dev/null || exit 1
 
-  mtoc_path=$(command -v mtoc)
+  mtoc_path=$(which mtoc)
   mtoc_hash_user=$(shasum -a 256 "${mtoc_path}" | cut -d' ' -f1)
   if [ "${mtoc_hash}" != "${mtoc_hash_user}" ]; then
     echo "Failed to install a compatible version of mtoc!"
