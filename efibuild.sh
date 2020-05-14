@@ -119,6 +119,11 @@ if [ "$(uname)" = "Darwin" ]; then
   fi
 fi
 
+# On Windows nasm may not be in PATH.
+if [ "$(uname | grep MINGW)" != "" ]; then
+  export PATH="$PATH:/c/Program Files/NASM"
+fi
+
 if [ "$(nasm -v)" = "" ] || [ "$(nasm -v | grep Apple)" != "" ]; then
   echo "Missing or incompatible nasm!"
   echo "Download the latest nasm from http://www.nasm.us/pub/nasm/releasebuilds/"
@@ -331,7 +336,7 @@ if [ "$SKIP_TESTS" != "1" ]; then
     export VS2017_PREFIX="${VS2017_BASEPREFIX}${VS2017_DIR}"
     export WINSDK_PATH_FOR_RC_EXE="C:\\Program Files (x86)\\Windows Kits\\8.1\\bin\\x86\\"
     BASE_TOOLS="$(pwd)/BaseTools"
-    export PATH="${BASE_TOOLS}/Bin/Win32:${BASE_TOOLS}/BinWrappers/WindowsLike:/c/Program Files/NASM:$PATH"
+    export PATH="${BASE_TOOLS}/Bin/Win32:${BASE_TOOLS}/BinWrappers/WindowsLike:$PATH"
     # Extract header paths for cl.exe to work.
     eval "$(python -c '
 import sys, os, subprocess
