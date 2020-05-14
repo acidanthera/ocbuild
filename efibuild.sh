@@ -107,9 +107,16 @@ if [ "${BUILDDIR}" != "$(printf "%s\n" "${BUILDDIR}")" ] ; then
   exit 1
 fi
 
-if [ "$(which clang)" = "" ] || [ "$(which git)" = "" ] || [ "$(clang -v 2>&1 | grep "no developer")" != "" ] || [ "$(git -v 2>&1 | grep "no developer")" != "" ]; then
-  echo "Missing Xcode tools, please install them!"
+if [ "$(which git)" = "" ]; then
+  echo "Missing git, please install it!"
   exit 1
+fi
+
+if [ "$(uname)" = "Darwin" ]; then
+  if [ "$(which clang)" = "" ] || [ "$(clang -v 2>&1 | grep "no developer")" != "" ] || [ "$(git -v 2>&1 | grep "no developer")" != "" ]; then
+    echo "Missing Xcode tools, please install them!"
+    exit 1
+  fi
 fi
 
 if [ "$(nasm -v)" = "" ] || [ "$(nasm -v | grep Apple)" != "" ]; then
@@ -371,7 +378,7 @@ if [ "$(type -t package)" = "function" ]; then
     for rtarget in "${RTARGETS[@]}" ; do
       if [ "$PACKAGE" = "" ] || [ "$PACKAGE" = "$rtarget" ]; then
         package "UDK/Build/${RELPKG}/${rtarget}_${TOOLCHAINS[0]}/${ARCHS[0]}" "$rtarget" "$HASH" || exit 1
-        cp "UDK/Build/${RELPKG}/${rtarget}_${TOOLCHAINS[0]}/${ARCHS[0]}"/*.zip Binaries
+        cp "UDK/Build/${RELPKG}/${rtarget}_${TOOLCHAINS[0]}/${ARCHS[0]}"/*.zip Binaries || echo skipping
       fi
     done
   fi
