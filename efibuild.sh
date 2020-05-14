@@ -250,11 +250,6 @@ echo "Primary toolchain ${TOOLCHAINS[0]} and arch ${ARCHS[0]}"
 
 if [ ! -d "Binaries" ]; then
   mkdir Binaries || exit 1
-  cd Binaries || exit 1
-  for target in "${TARGETS[@]}" ; do
-    mkdir "${target}" || exit
-  done
-  cd .. || exit 1
 fi
 
 if [ ! -f UDK/UDK.ready ]; then
@@ -372,14 +367,11 @@ cd .. || exit 1
 if [ "$(type -t package)" = "function" ]; then
   if [ "$SKIP_PACKAGE" != "1" ]; then
     echo "Packaging..."
-    # Incorrect diagnostic due to Binaries prefix.
-    # REF: https://github.com/koalaman/shellcheck/wiki/SC2035
-    # shellcheck disable=SC2035
-    find Binaries -name "*.zip" -exec rm -f {} \;
+    rm -f Binaries/*.zip
     for rtarget in "${RTARGETS[@]}" ; do
       if [ "$PACKAGE" = "" ] || [ "$PACKAGE" = "$rtarget" ]; then
-        package "UDK/Build/${RELPKG}/${target}_${TOOLCHAINS[0]}/${ARCHS[0]}" "$rtarget" "$HASH" || exit 1
-        cp -r "UDK/Build/${RELPKG}/${target}_${TOOLCHAINS[0]}/${ARCHS[0]}"/*.zip "Binaries/$rtarget"
+        package "UDK/Build/${RELPKG}/${rtarget}_${TOOLCHAINS[0]}/${ARCHS[0]}" "$rtarget" "$HASH" || exit 1
+        cp "UDK/Build/${RELPKG}/${rtarget}_${TOOLCHAINS[0]}/${ARCHS[0]}"/*.zip Binaries
       fi
     done
   fi
