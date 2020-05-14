@@ -21,7 +21,7 @@ updaterepo() {
   fi
   pushd "$2" >/dev/null || exit 1
   git pull
-  if [ "$2" != "UDK" ]; then
+  if [ "$2" != "UDK" ] && [ "$(uname | grep MINGW)" = "" ]; then
     sym=$(find . -not -type d -exec file "{}" ";" | grep CRLF)
     if [ "${sym}" != "" ]; then
       echo "Repository $1 named $2 contains CRLF line endings"
@@ -75,6 +75,27 @@ buildme() {
   { wait $cmd_pid 2>/dev/null; result=$?; ps -p$mon_pid 2>&1>/dev/null && kill $mon_pid; } || return 1
   return $result
 }
+
+symlink() {
+  if [ "$(uname | grep MINGW)" != "" ]; then
+    # This requires extra permissions.
+    # cmd <<< "mklink /D \"$2\" \"${1//\//\\}\"" > /dev/null
+    mkdir -p "$2" || exit 1
+    for i in "$1"/* ; do
+      if [ "$(echo "${i}" | grep "$(basename "$(pwd)")")" != "" ]; then
+        continue
+      fi
+      cp -r "$i" "$2" || exit 1
+    done
+  else
+    ln -s "$1" "$2" || exit 1
+  fi
+}
+
+if [ "$(uname | grep MINGW)" != "" ]; then
+  cmd <<< 'chcp 437'
+  alias whereis=where
+fi
 
 if [ "${SELFPKG}" = "" ]; then
   echo "You are required to set SELFPKG variable!"
@@ -185,6 +206,8 @@ fi
 if [ "$TOOLCHAINS" = "" ]; then
   if [ "$(uname)" = "Darwin" ]; then
     TOOLCHAINS=('XCODE5')
+  elif [ "$(uname | grep MINGW)" != "" ]; then
+    TOOLCHAINS=('VS2017')
   else
     TOOLCHAINS=('CLANGPDB' 'GCC5')
   fi
@@ -229,7 +252,7 @@ if [ ! -d "Binaries" ]; then
   mkdir Binaries || exit 1
   cd Binaries || exit 1
   for target in "${TARGETS[@]}" ; do
-    ln -s ../UDK/Build/"${RELPKG}/${target}_${TOOLCHAINS[0]}/${ARCHS[0]}" "${target}" || exit 1
+    mkdir "${target}" || exit
   done
   cd .. || exit 1
 fi
@@ -237,11 +260,13 @@ fi
 if [ ! -f UDK/UDK.ready ]; then
   rm -rf UDK
 
-  sym=$(find . -not -type d -exec file "{}" ";" | grep CRLF)
-  if [ "${sym}" != "" ]; then
-    echo "Error: the following files in the repository CRLF line endings:"
-    echo "$sym"
-    exit 1
+  if [ "$(uname | grep MINGW)" = "" ]; then
+    sym=$(find . -not -type d -exec file "{}" ";" | grep CRLF)
+    if [ "${sym}" != "" ]; then
+      echo "Error: the following files in the repository CRLF line endings:"
+      echo "$sym"
+      exit 1
+    fi
   fi
 fi
 
@@ -268,14 +293,62 @@ for (( i=0; i<deps; i++ )) ; do
 done
 
 if [ ! -d "${SELFPKG}" ]; then
-  ln -s .. "${SELFPKG}" || exit 1
+  symlink .. "${SELFPKG}" || exit 1
 fi
 
 source edksetup.sh || exit 1
 
 if [ "$SKIP_TESTS" != "1" ]; then
   echo "Testing..."
-  make -C BaseTools -j || exit 1
+  if [ "$(uname | grep MINGW)" != "" ]; then
+    # Configure Visual Studio environment. Requires:
+    # 1. choco install microsoft-build-tools microsoft-visual-cpp-build-tools nasm
+    # 2. iasl in PATH for MdeModulePkg
+    tools="${EDK_TOOLS_PATH}"
+    tools="${tools//\//\\}"
+    tools="${tools/\\c\\/C:\\}"
+    echo "Expanded EDK_TOOLS_PATH from ${EDK_TOOLS_PATH} to ${tools}"
+    export EDK_TOOLS_PATH="${tools}"
+    export BASE_TOOLS_PATH="${tools}"
+    export PYTHON_COMMAND="python"
+    VS2017_BUILDTOOLS="C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\BuildTools"
+    VS2017_BASEPREFIX="${VS2017_BUILDTOOLS}\\VC\\Tools\\MSVC\\"
+    # Intended to use ls here to get first entry.
+    # REF: https://github.com/koalaman/shellcheck/wiki/SC2012
+    # shellcheck disable=SC2012
+    cd "${VS2017_BASEPREFIX}" || exit 1
+    # Incorrect diagnostic due to action.
+    # REF: https://github.com/koalaman/shellcheck/wiki/SC2035
+    # shellcheck disable=SC2035
+    VS2017_DIR="$(find * -maxdepth 0 -type d -print -quit)"
+    if [ "${VS2017_DIR}" = "" ]; then
+      echo "No VS2017 MSVC compiler"
+      exit 1
+    fi
+    cd - || exit 1
+    export VS2017_PREFIX="${VS2017_BASEPREFIX}${VS2017_DIR}"
+    export WINSDK_PATH_FOR_RC_EXE="C:\\Program Files (x86)\\Windows Kits\\8.1\\bin\\x86\\"
+    BASE_TOOLS="$(pwd)/BaseTools"
+    export PATH="${BASE_TOOLS}/Bin/Win32:${BASE_TOOLS}/BinWrappers/WindowsLike:/c/Program Files/NASM:$PATH"
+    # Extract header paths for cl.exe to work.
+    eval "$(python -c '
+import sys, os, subprocess
+import distutils.msvc9compiler as msvc
+msvc.find_vcvarsall=lambda _: sys.argv[1]
+envs=msvc.query_vcvarsall(sys.argv[2])
+for k,v in envs.items():
+    k = k.upper()
+    v = ":".join(subprocess.check_output(["cygpath","-u",p]).decode("ascii").rstrip() for p in v.split(";"))
+    v = v.replace("'\''",r"'\'\\\'\''")
+    print("export %(k)s='\''%(v)s'\''" % locals())
+' "${VS2017_BUILDTOOLS}\\Common7\\Tools\\VsDevCmd.bat" '-arch=amd64')"
+    # Normal build similar to Unix.
+    cd BaseTools || exit 1
+    nmake        || exit 1
+    cd ..        || exit 1
+  else
+    make -C BaseTools -j || exit 1
+  fi
   touch UDK.ready
 fi
 
@@ -299,9 +372,14 @@ cd .. || exit 1
 if [ "$(type -t package)" = "function" ]; then
   if [ "$SKIP_PACKAGE" != "1" ]; then
     echo "Packaging..."
+    # Incorrect diagnostic due to Binaries prefix.
+    # REF: https://github.com/koalaman/shellcheck/wiki/SC2035
+    # shellcheck disable=SC2035
+    find Binaries -name "*.zip" -exec rm -f {} \;
     for rtarget in "${RTARGETS[@]}" ; do
       if [ "$PACKAGE" = "" ] || [ "$PACKAGE" = "$rtarget" ]; then
-        package "Binaries/$rtarget" "$rtarget" "$HASH" || exit 1
+        package "UDK/Build/${RELPKG}/${target}_${TOOLCHAINS[0]}/${ARCHS[0]}" "$rtarget" "$HASH" || exit 1
+        cp -r "UDK/Build/${RELPKG}/${target}_${TOOLCHAINS[0]}/${ARCHS[0]}"/*.zip "Binaries/$rtarget"
       fi
     done
   fi
