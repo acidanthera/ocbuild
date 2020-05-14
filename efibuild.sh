@@ -333,7 +333,7 @@ if [ "$SKIP_TESTS" != "1" ]; then
       exit 1
     fi
     cd - || exit 1
-    export VS2017_PREFIX="${VS2017_BASEPREFIX}${VS2017_DIR}"
+    export VS2017_PREFIX="${VS2017_BASEPREFIX}${VS2017_DIR}\\"
     export WINSDK_PATH_FOR_RC_EXE="C:\\Program Files (x86)\\Windows Kits\\8.1\\bin\\x86\\"
     BASE_TOOLS="$(pwd)/BaseTools"
     export PATH="${BASE_TOOLS}/Bin/Win32:${BASE_TOOLS}/BinWrappers/WindowsLike:$PATH"
