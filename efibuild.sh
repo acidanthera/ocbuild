@@ -94,6 +94,7 @@ symlink() {
 
 if [ "$(uname | grep MINGW)" != "" ]; then
   cmd <<< 'chcp 437'
+  export PYTHON_COMMAND="python"
 fi
 
 if [ "${SELFPKG}" = "" ]; then
@@ -302,7 +303,6 @@ if [ ! -d "${SELFPKG}" ]; then
   symlink .. "${SELFPKG}" || exit 1
 fi
 
-export PYTHON_COMMAND="python"
 source edksetup.sh || exit 1
 
 if [ "$SKIP_TESTS" != "1" ]; then
