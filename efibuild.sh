@@ -94,7 +94,6 @@ symlink() {
 
 if [ "$(uname | grep MINGW)" != "" ]; then
   cmd <<< 'chcp 437'
-  alias whereis=where
 fi
 
 if [ "${SELFPKG}" = "" ]; then
@@ -303,6 +302,7 @@ if [ ! -d "${SELFPKG}" ]; then
   symlink .. "${SELFPKG}" || exit 1
 fi
 
+export PYTHON_COMMAND="python"
 source edksetup.sh || exit 1
 
 if [ "$SKIP_TESTS" != "1" ]; then
@@ -317,7 +317,6 @@ if [ "$SKIP_TESTS" != "1" ]; then
     echo "Expanded EDK_TOOLS_PATH from ${EDK_TOOLS_PATH} to ${tools}"
     export EDK_TOOLS_PATH="${tools}"
     export BASE_TOOLS_PATH="${tools}"
-    export PYTHON_COMMAND="python"
     VS2017_BUILDTOOLS="C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\BuildTools"
     VS2017_BASEPREFIX="${VS2017_BUILDTOOLS}\\VC\\Tools\\MSVC\\"
     # Intended to use ls here to get first entry.
