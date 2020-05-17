@@ -102,6 +102,10 @@ if [ "${SELFPKG}" = "" ]; then
   exit 1
 fi
 
+if [ "${SELFPKG_DIR}" = "" ]; then
+  SELFPKG_DIR="${SELFPKG}"
+fi
+
 if [ "${BUILDDIR}" != "$(printf "%s\n" "${BUILDDIR}")" ] ; then
   echo "EDK2 build system may still fail to support directories with spaces!"
   exit 1
@@ -364,8 +368,8 @@ if [ "$SKIP_BUILD" != "1" ]; then
     for toolchain in "${TOOLCHAINS[@]}" ; do
       for target in "${TARGETS[@]}" ; do
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
-          echo "Building ${SELFPKG}/${SELFPKG}.dsc for $arch in $target with ${toolchain}..."
-          buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG}/${SELFPKG}.dsc" || abortbuild
+          echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for $arch in $target with ${toolchain}..."
+          buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" || abortbuild
           echo " - OK"
         fi
       done
