@@ -21,7 +21,7 @@ updaterepo() {
   fi
   pushd "$2" >/dev/null || exit 1
   git pull
-  if [ "$2" != "UDK" ] && [ "$(uname | grep MINGW)" = "" ]; then
+  if [ "$2" != "UDK" ] && [ "$(unamer)" != "Windows" ]; then
     sym=$(find . -not -type d -exec file "{}" ";" | grep CRLF)
     if [ "${sym}" != "" ]; then
       echo "Repository $1 named $2 contains CRLF line endings"
@@ -77,7 +77,7 @@ buildme() {
 }
 
 symlink() {
-  if [ "$(uname | grep MINGW)" != "" ]; then
+  if [ "$(unamer)" = "Windows" ]; then
     # This requires extra permissions.
     # cmd <<< "mklink /D \"$2\" \"${1//\//\\}\"" > /dev/null
     rm -rf "$2"
@@ -93,9 +93,19 @@ symlink() {
   fi
 }
 
-echo "Building on $(uname)"
+unamer() {
+  NAME="$(uname)"
 
-if [ "$(uname | grep MINGW)" != "" ]; then
+  if [ "$(echo "${NAME}" | grep MINGW)" != "" ] || [ "$(echo "${NAME}" | grep MSYS)" != "" ]; then
+    echo "Windows"
+  else
+    echo "${NAME}"
+  fi
+}
+
+echo "Building on $(unamer)"
+
+if [ "$(unamer)" = "Windows" ]; then
   cmd <<< 'chcp 437'
   export PYTHON_COMMAND="python"
 fi
@@ -124,7 +134,7 @@ if [ "$(which zip)" = "" ]; then
   exit 1
 fi
 
-if [ "$(uname)" = "Darwin" ]; then
+if [ "$(unamer)" = "Darwin" ]; then
   if [ "$(which clang)" = "" ] || [ "$(clang -v 2>&1 | grep "no developer")" != "" ] || [ "$(git -v 2>&1 | grep "no developer")" != "" ]; then
     echo "Missing Xcode tools, please install them!"
     exit 1
@@ -132,7 +142,7 @@ if [ "$(uname)" = "Darwin" ]; then
 fi
 
 # On Windows nasm may not be in PATH.
-if [ "$(uname | grep MINGW)" != "" ]; then
+if [ "$(unamer)" = "Windows" ]; then
   export PATH="$PATH:/c/Program Files/NASM"
 fi
 
@@ -168,7 +178,7 @@ if [ "${mtoc_hash}" = "" ]; then
 fi
 
 # On Darwin we need mtoc. Only for XCODE5, but do not care for now.
-if [ "$(uname)" = "Darwin" ]; then
+if [ "$(unamer)" = "Darwin" ]; then
   valid_mtoc=false
 else
   valid_mtoc=true
@@ -229,9 +239,9 @@ if [ "$ARCHS" = "" ]; then
 fi
 
 if [ "$TOOLCHAINS" = "" ]; then
-  if [ "$(uname)" = "Darwin" ]; then
+  if [ "$(unamer)" = "Darwin" ]; then
     TOOLCHAINS=('XCODE5')
-  elif [ "$(uname | grep MINGW)" != "" ]; then
+  elif [ "$(unamer)" = "Windows" ]; then
     TOOLCHAINS=('VS2017')
   else
     TOOLCHAINS=('CLANGPDB' 'GCC5')
@@ -280,7 +290,7 @@ fi
 if [ ! -f UDK/UDK.ready ]; then
   rm -rf UDK
 
-  if [ "$(uname | grep MINGW)" = "" ]; then
+  if [ "$(unamer)" != "Windows" ]; then
     sym=$(find . -not -type d -exec file "{}" ";" | grep CRLF)
     if [ "${sym}" != "" ]; then
       echo "Error: the following files in the repository CRLF line endings:"
@@ -318,7 +328,7 @@ source edksetup.sh || exit 1
 
 if [ "$SKIP_TESTS" != "1" ]; then
   echo "Testing..."
-  if [ "$(uname | grep MINGW)" != "" ]; then
+  if [ "$(unamer)" != "Windows" ]; then
     # Configure Visual Studio environment. Requires:
     # 1. choco install microsoft-build-tools visualcpp-build-tools nasm zip
     # 2. iasl in PATH for MdeModulePkg
