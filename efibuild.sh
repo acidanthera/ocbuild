@@ -322,7 +322,7 @@ for (( i=0; i<deps; i++ )) ; do
   updaterepo "${DEPURLS[$i]}" "${DEPNAMES[$i]}" "${DEPBRANCHES[$i]}" || exit 1
 done
 
-symlink .. "${SELFPKG}" || exit 1
+symlink .. "${SELFPKG_DIR}" || exit 1
 
 source edksetup.sh || exit 1
 
