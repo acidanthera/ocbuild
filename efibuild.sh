@@ -93,6 +93,8 @@ symlink() {
   fi
 }
 
+echo "Building on $(uname)"
+
 if [ "$(uname | grep MINGW)" != "" ]; then
   cmd <<< 'chcp 437'
   export PYTHON_COMMAND="python"
