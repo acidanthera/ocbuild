@@ -80,6 +80,7 @@ symlink() {
   if [ "$(uname | grep MINGW)" != "" ]; then
     # This requires extra permissions.
     # cmd <<< "mklink /D \"$2\" \"${1//\//\\}\"" > /dev/null
+    rm -rf "$2"
     mkdir -p "$2" || exit 1
     for i in "$1"/* ; do
       if [ "$(echo "${i}" | grep "$(basename "$(pwd)")")" != "" ]; then
@@ -87,7 +88,7 @@ symlink() {
       fi
       cp -r "$i" "$2" || exit 1
     done
-  else
+  elif [ ! -d "$2" ]; then
     ln -s "$1" "$2" || exit 1
   fi
 }
@@ -303,9 +304,7 @@ for (( i=0; i<deps; i++ )) ; do
   updaterepo "${DEPURLS[$i]}" "${DEPNAMES[$i]}" "${DEPBRANCHES[$i]}" || exit 1
 done
 
-if [ ! -d "${SELFPKG}" ]; then
-  symlink .. "${SELFPKG}" || exit 1
-fi
+symlink .. "${SELFPKG}" || exit 1
 
 source edksetup.sh || exit 1
 
