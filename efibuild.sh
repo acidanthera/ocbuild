@@ -117,6 +117,11 @@ if [ "$(which git)" = "" ]; then
   exit 1
 fi
 
+if [ "$(which zip)" = "" ]; then
+  echo "Missing zip, please install it!"
+  exit 1
+fi
+
 if [ "$(uname)" = "Darwin" ]; then
   if [ "$(which clang)" = "" ] || [ "$(clang -v 2>&1 | grep "no developer")" != "" ] || [ "$(git -v 2>&1 | grep "no developer")" != "" ]; then
     echo "Missing Xcode tools, please install them!"
@@ -132,6 +137,7 @@ fi
 if [ "$(nasm -v)" = "" ] || [ "$(nasm -v | grep Apple)" != "" ]; then
   echo "Missing or incompatible nasm!"
   echo "Download the latest nasm from http://www.nasm.us/pub/nasm/releasebuilds/"
+  echo "Current PATH: $PATH -- $(which nasm)"
   # On Darwin we can install prebuilt nasm. On Linux let users handle it.
   if [ "$(uname)" = "Darwin" ]; then
     prompt "Install last tested version automatically?"
@@ -312,7 +318,7 @@ if [ "$SKIP_TESTS" != "1" ]; then
   echo "Testing..."
   if [ "$(uname | grep MINGW)" != "" ]; then
     # Configure Visual Studio environment. Requires:
-    # 1. choco install microsoft-build-tools visualcpp-build-tools nasm
+    # 1. choco install microsoft-build-tools visualcpp-build-tools nasm zip
     # 2. iasl in PATH for MdeModulePkg
     tools="${EDK_TOOLS_PATH}"
     tools="${tools//\//\\}"
