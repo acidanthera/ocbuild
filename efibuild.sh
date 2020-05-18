@@ -328,7 +328,7 @@ source edksetup.sh || exit 1
 
 if [ "$SKIP_TESTS" != "1" ]; then
   echo "Testing..."
-  if [ "$(unamer)" != "Windows" ]; then
+  if [ "$(unamer)" = "Windows" ]; then
     # Configure Visual Studio environment. Requires:
     # 1. choco install microsoft-build-tools visualcpp-build-tools nasm zip
     # 2. iasl in PATH for MdeModulePkg
