@@ -382,11 +382,15 @@ cd .. || exit 1
 if [ "$(type -t package)" = "function" ]; then
   if [ "$SKIP_PACKAGE" != "1" ]; then
     echo "Packaging..."
-    rm -f Binaries/*.zip
+    if [ "$NO_ARCHIVES" != "1" ]; then
+      rm -f Binaries/*.zip
+    fi
     for rtarget in "${RTARGETS[@]}" ; do
       if [ "$PACKAGE" = "" ] || [ "$PACKAGE" = "$rtarget" ]; then
         package "UDK/Build/${RELPKG}/${rtarget}_${TOOLCHAINS[0]}/${ARCHS[0]}" "$rtarget" "$HASH" || exit 1
-        cp "UDK/Build/${RELPKG}/${rtarget}_${TOOLCHAINS[0]}/${ARCHS[0]}"/*.zip Binaries || echo skipping
+        if [ "$NO_ARCHIVES" != "1" ]; then
+          cp "UDK/Build/${RELPKG}/${rtarget}_${TOOLCHAINS[0]}/${ARCHS[0]}"/*.zip Binaries || echo skipping
+        fi
       fi
     done
   fi
