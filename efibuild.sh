@@ -313,7 +313,7 @@ if [ "$SKIP_TESTS" != "1" ]; then
   echo "Testing..."
   if [ "$(uname | grep MINGW)" != "" ]; then
     # Configure Visual Studio environment. Requires:
-    # 1. choco install microsoft-build-tools microsoft-visual-cpp-build-tools nasm
+    # 1. choco install microsoft-build-tools visualcpp-build-tools nasm
     # 2. iasl in PATH for MdeModulePkg
     tools="${EDK_TOOLS_PATH}"
     tools="${tools//\//\\}"
@@ -337,7 +337,24 @@ if [ "$SKIP_TESTS" != "1" ]; then
     fi
     cd - || exit 1
     export VS2017_PREFIX="${VS2017_BASEPREFIX}${VS2017_DIR}\\"
-    export WINSDK_PATH_FOR_RC_EXE="C:\\Program Files (x86)\\Windows Kits\\8.1\\bin\\x86\\"
+
+    WINSDK_BASE="/c/Program Files (x86)/Windows Kits/10/bin"
+    if [ -d "${WINSDK_BASE}" ]; then
+      for dir in "${WINSDK_BASE}"/*/; do
+        if [ -f "${dir}x86/rc.exe" ]; then
+          WINSDK_PATH_FOR_RC_EXE="${dir}x86/rc.exe"
+          WINSDK_PATH_FOR_RC_EXE="${WINSDK_PATH_FOR_RC_EXE//\//\\}"
+          WINSDK_PATH_FOR_RC_EXE="${WINSDK_PATH_FOR_RC_EXE/\\c\\/C:\\}"
+          break
+        fi
+      done
+    fi
+    if [ "${WINSDK_PATH_FOR_RC_EXE}" != "" ]; then
+      export WINSDK_PATH_FOR_RC_EXE
+    else
+      echo "Failed to find rc.exe"
+      exit 1
+    fi
     BASE_TOOLS="$(pwd)/BaseTools"
     export PATH="${BASE_TOOLS}/Bin/Win32:${BASE_TOOLS}/BinWrappers/WindowsLike:$PATH"
     # Extract header paths for cl.exe to work.
