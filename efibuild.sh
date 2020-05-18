@@ -141,9 +141,9 @@ if [ "$(unamer)" = "Darwin" ]; then
   fi
 fi
 
-# On Windows nasm may not be in PATH.
+# On Windows nasm and python may not be in PATH.
 if [ "$(unamer)" = "Windows" ]; then
-  export PATH="$PATH:/c/Program Files/NASM"
+  export PATH="/c/Python38:$PATH:/c/Program Files/NASM"
 fi
 
 if [ "$(nasm -v)" = "" ] || [ "$(nasm -v | grep Apple)" != "" ]; then
