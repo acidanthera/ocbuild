@@ -17,7 +17,7 @@ prompt() {
 
 updaterepo() {
   if [ ! -d "$2" ]; then
-    git clone "$1" -b "$3" --depth=1 "$2" || exit 1
+    git clone --recursive "$1" -b "$3" --depth=1 "$2" || exit 1
   fi
   pushd "$2" >/dev/null || exit 1
   git pull
