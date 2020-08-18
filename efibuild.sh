@@ -143,7 +143,7 @@ fi
 
 # On Windows nasm and python may not be in PATH.
 if [ "$(unamer)" = "Windows" ]; then
-  export PATH="/c/Python38:$PATH:/c/Program Files/NASM"
+  export PATH="/c/Python38:$PATH:/c/Program Files/NASM:/c/tools/ASL"
 fi
 
 if [ "$(nasm -v)" = "" ] || [ "$(nasm -v | grep Apple)" != "" ]; then
