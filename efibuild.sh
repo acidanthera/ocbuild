@@ -344,7 +344,10 @@ for (( i=0; i<deps; i++ )) ; do
   updaterepo "${DEPURLS[$i]}" "${DEPNAMES[$i]}" "${DEPBRANCHES[$i]}" || exit 1
 done
 
-symlink .. "${SELFPKG_DIR}" || exit 1
+# Allow building non-self packages.
+if [ ! -e "${SELFPKG_DIR}" ]; then
+  symlink .. "${SELFPKG_DIR}" || exit 1
+fi
 
 source edksetup.sh || exit 1
 
