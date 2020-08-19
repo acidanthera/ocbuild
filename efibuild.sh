@@ -192,9 +192,11 @@ if [ "$(iasl -v)" = "" ]; then
   popd >/dev/null || exit 1
 fi
 
-mtoc_hash=$(curl -L "https://github.com/acidanthera/ocbuild/raw/master/external/mtoc-mac64.sha256") || exit 1
+if [ "${MTOC_HASH}" = "" ]; then
+  MTOC_HASH=$(curl -L "https://github.com/acidanthera/ocbuild/raw/master/external/mtoc-mac64.sha256") || exit 1
+fi
 
-if [ "${mtoc_hash}" = "" ]; then
+if [ "${MTOC_HASH}" = "" ]; then
   echo "Cannot obtain the latest compatible mtoc hash!"
   exit 1
 fi
@@ -209,7 +211,7 @@ fi
 if [ "$(which mtoc)" != "" ]; then
   mtoc_path=$(which mtoc)
   mtoc_hash_user=$(shasum -a 256 "${mtoc_path}" | cut -d' ' -f1)
-  if [ "${mtoc_hash}" = "${mtoc_hash_user}" ]; then
+  if [ "${MTOC_HASH}" = "${mtoc_hash_user}" ]; then
     valid_mtoc=true
   elif [ "${IGNORE_MTOC_VERSION}" = "1" ]; then
     echo "Forcing the use of UNKNOWN mtoc version due to IGNORE_MTOC_VERSION=1"
@@ -220,7 +222,7 @@ if [ "$(which mtoc)" != "" ]; then
     exit 1
   else
     echo "Found incompatible mtoc installed to ${mtoc_path}!"
-    echo "Expected SHA-256: ${mtoc_hash}"
+    echo "Expected SHA-256: ${MTOC_HASH}"
     echo "Found SHA-256:    ${mtoc_hash_user}"
     echo "Hint: Reinstall this mtoc or use IGNORE_MTOC_VERSION=1 at your own risk."
   fi
@@ -244,9 +246,9 @@ if ! $valid_mtoc; then
 
   mtoc_path=$(which mtoc)
   mtoc_hash_user=$(shasum -a 256 "${mtoc_path}" | cut -d' ' -f1)
-  if [ "${mtoc_hash}" != "${mtoc_hash_user}" ]; then
+  if [ "${MTOC_HASH}" != "${mtoc_hash_user}" ]; then
     echo "Failed to install a compatible version of mtoc!"
-    echo "Expected SHA-256: ${mtoc_hash}"
+    echo "Expected SHA-256: ${MTOC_HASH}"
     echo "Found SHA-256:    ${mtoc_hash_user}"
     exit 1
   fi
