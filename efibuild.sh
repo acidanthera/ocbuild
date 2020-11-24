@@ -362,7 +362,10 @@ if [ "$SKIP_TESTS" != "1" ]; then
     # 2. iasl in PATH for MdeModulePkg
     tools="${EDK_TOOLS_PATH}"
     tools="${tools//\//\\}"
+    # For Travis CI
     tools="${tools/\\c\\/C:\\}"
+    # For GitHub Actions
+    tools="${tools/\\d\\/D:\\}"
     echo "Expanded EDK_TOOLS_PATH from ${EDK_TOOLS_PATH} to ${tools}"
     export EDK_TOOLS_PATH="${tools}"
     export BASE_TOOLS_PATH="${tools}"
