@@ -69,8 +69,10 @@ git --version
 colored_text "bash version"
 bash --version
 
-colored_text "curl version"
-curl --version
+if [ "$(unamer)" != "Windows" ]; then
+    colored_text "curl version"
+    curl --version
+fi
 
 if [ "$(unamer)" = "Darwin" ]; then
     colored_text "clang version"
