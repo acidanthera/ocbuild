@@ -38,12 +38,17 @@ if [ "$(unamer)" = "Darwin" ]; then
 
     SELECTED_DEVELOPER_DIR="${JOB_TYPE}_DEVELOPER_DIR"
 
+    export BUILD_DEVELOPER_DIR
+    export ANALYZE_DEVELOPER_DIR
+    export COVERITY_DEVELOPER_DIR
+    export SELECTED_DEVELOPER_DIR
+
     if [ -z "${!SELECTED_DEVELOPER_DIR}" ]; then
         echo "ERROR: Invalid or missing job type!"
         exit 1
     fi
 
-    echo "DEVELOPER_DIR=${!SELECTED_DEVELOPER_DIR}" >> $GITHUB_ENV
+    echo "DEVELOPER_DIR=${!SELECTED_DEVELOPER_DIR}" >> "$GITHUB_ENV"
 
     # Since GITHUB_ENV doesn't affect the current step, need to export DEVELOPER_DIR for subsequent commands.
     export DEVELOPER_DIR="${!SELECTED_DEVELOPER_DIR}"

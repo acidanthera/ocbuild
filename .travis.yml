@@ -1,9 +1,0 @@
-language: shell
-matrix:
-  include:
-  - os: osx
-    name: "Check Shell Scripts"
-
-    script:
-    - HOMEBREW_NO_INSTALL_CLEANUP=1 brew install shellcheck
-    - find . \( -name "*.tool" -o -name "*.command" -o -name "*.sh" \) -exec sh -c 'for TargetFile; do shellcheck --severity=info "${TargetFile}" || exit 1; done' sh {} +

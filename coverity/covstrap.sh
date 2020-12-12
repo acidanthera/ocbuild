@@ -159,6 +159,7 @@ export PATH="${COVERITY_TOOLS_DIR}:${COVERITY_SCAN_DIR}/bin:${PATH}"
 
 # Run Coverity
 export COVERITY_UNSUPPORTED=1
+# shellcheck disable=SC2086
 cov-build --dir "${COVERITY_RESULTS_DIR}" ${COVERITY_BUILD_COMMAND} || ret=$?
 
 if [ $ret -ne 0 ]; then
