@@ -20,7 +20,7 @@ updaterepo() {
     git clone "$1" -b "$3" --depth=1 "$2" || exit 1
   fi
   pushd "$2" >/dev/null || exit 1
-  git pull
+  git pull --rebase --autostash
   if [ "$2" != "UDK" ] && [ "$(unamer)" != "Windows" ]; then
     sym=$(find . -not -type d -exec file "{}" ";" | grep CRLF)
     if [ "${sym}" != "" ]; then
