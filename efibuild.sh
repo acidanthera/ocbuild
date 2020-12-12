@@ -275,6 +275,8 @@ fi
 
 if [ "$TARGETS" = "" ]; then
   TARGETS=('DEBUG' 'RELEASE' 'NOOPT')
+elif [ "$RTARGETS" = "" ]; then
+  RTARGETS="${TARGETS[*]}"
 fi
 
 if [ "$RTARGETS" = "" ]; then
