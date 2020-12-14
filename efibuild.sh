@@ -335,6 +335,7 @@ if [ -d ../Patches ]; then
   if [ ! -f patches.ready ]; then
     git config user.name ocbuild
     git config user.email ocbuild@acidanthera.local
+    git config commit.gpgsign false
     for i in ../Patches/* ; do
       git apply --ignore-whitespace "$i" || exit 1
       git add .
