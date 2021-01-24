@@ -18,9 +18,26 @@
 #  src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/ocbuild/master/coverity/covstrap.sh) && eval "$src" || exit 1
 #
 
+
 PROJECT_PATH="$(pwd)"
+# shellcheck disable=SC2181
 if [ $? -ne 0 ] || [ ! -d "${PROJECT_PATH}" ]; then
   echo "ERROR: Failed to determine working directory!"
+  exit 1
+fi
+
+if [ "${COVERITY_SCAN_TOKEN}" = "" ]; then
+  echo "ERROR: No COVERITY_SCAN_TOKEN provided!"
+  exit 1
+fi
+
+if [ "${COVERITY_SCAN_EMAIL}" = "" ]; then
+  echo "ERROR: No COVERITY_SCAN_EMAIL provided!"
+  exit 1
+fi
+
+if [ "${GITHUB_REPOSITORY}" = "" ]; then
+  echo "ERROR: No GITHUB_REPOSITORY provided!"
   exit 1
 fi
 
@@ -28,6 +45,7 @@ fi
 CHMOD="/bin/chmod"
 CURL="/usr/bin/curl"
 MKDIR="/bin/mkdir"
+MV="/bin/mv"
 RM="/bin/rm"
 TAR="/usr/bin/tar"
 
@@ -35,6 +53,7 @@ TOOLS=(
   "${CHMOD}"
   "${CURL}"
   "${MKDIR}"
+  "${MV}"
   "${RM}"
   "${TAR}"
 )
@@ -46,12 +65,41 @@ for tool in "${TOOLS[@]}"; do
   fi
 done
 
+if [ "$(which gpg)" = "" ]; then
+  echo "ERROR: Missing GPG installation!"
+fi
+
 # Download Coverity
 COVERITY_SCAN_DIR="${PROJECT_PATH}/cov-scan"
-COVERITY_SCAN_ARCHIVE=coverity_scan.tgz
+COVERITY_SCAN_ARCHIVE=cov-analysis.gpg
+COVERITY_SCAN_INSTALLER=cov-analysis.sh
 COVERITY_SCAN_LINK="https://scan.coverity.com/download/macOSX?token=${COVERITY_SCAN_TOKEN}&project=${GITHUB_REPOSITORY}"
+COVERITY_KEY_LINK="https://scan.coverity.com/download/cxx/key?token=${COVERITY_SCAN_TOKEN}&project=${GITHUB_REPOSITORY}"
+COVERITY_KEY_FILE="scan_gpg.key"
 
 ret=0
+echo "Downloading Coverity sign key..."
+"${CURL}" -LfsS "${COVERITY_KEY_LINK}" -o "${COVERITY_KEY_FILE}" || ret=$?
+
+if [ $ret -ne 0 ]; then
+  echo "ERROR: Failed to download Coverity key file with code ${ret}!"
+  exit 1
+fi
+
+gpg --import "${COVERITY_KEY_FILE}" || ret=$?
+
+if [ $ret -ne 0 ]; then
+  echo "ERROR: Failed to import Coverity key file with code ${ret}!"
+  exit 1
+fi
+
+echo "CB75BD66A8ECF4E1E20D35FC60E3EA2BA60A81E7:6:" | gpg --import-ownertrust || ret=$?
+
+if [ $ret -ne 0 ]; then
+  echo "ERROR: Failed to trust Coverity key file with code ${ret}!"
+  exit 1
+fi
+
 echo "Downloading Coverity build tool..."
 "${CURL}" -LfsS "${COVERITY_SCAN_LINK}" -o "${COVERITY_SCAN_ARCHIVE}" || ret=$?
 
@@ -60,21 +108,45 @@ if [ $ret -ne 0 ]; then
   exit 1
 fi
 
+"${RM}" -f "${COVERITY_SCAN_INSTALLER}"
+if [ -f "${COVERITY_SCAN_INSTALLER}" ]; then
+  echo "ERROR: Coverity build tool already exists and cannot be removed!"
+  exit 1
+fi
+
+gpg --output "${COVERITY_SCAN_INSTALLER}" --decrypt "${COVERITY_SCAN_ARCHIVE}" || ret=$?
+
+if [ $ret -ne 0 ]; then
+  echo "ERROR: Failed to decrypt Coverity build tool with code ${ret}!"
+  exit 1
+fi
+
+"${CHMOD}" a+x "${COVERITY_SCAN_INSTALLER}" || ret=$?
+if [ $ret -ne 0 ]; then
+  echo "ERROR: Failed to chmod Coverity build tool with code ${ret}!"
+  exit 1
+fi
+
+./"${COVERITY_SCAN_INSTALLER}" || ret=$?
+if [ $ret -ne 0 ]; then
+  echo "ERROR: Failed to extract Coverity build tool with code ${ret}!"
+  exit 1
+fi
+
+COVERITY_EXTRACT_DIR=$(find . -depth 1 -type d -name 'cov-analysis-*' | head -1)
+
+if [ "${COVERITY_EXTRACT_DIR}" = "" ]; then
+  echo "ERROR: Failed to find Coverity build tool directory!"
+  exit 1
+fi
+
 "${RM}" -rf "${COVERITY_SCAN_DIR}"
-"${MKDIR}" "${COVERITY_SCAN_DIR}" || ret=$?
+"${MV}" "${COVERITY_EXTRACT_DIR}" "${COVERITY_SCAN_DIR}" || ret=$?
 
-if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to create cov-scan directory ${COVERITY_SCAN_DIR} with code ${ret}!"
+if [ "${COVERITY_EXTRACT_DIR}" = "" ]; then
+  echo "ERROR: Failed to move Coverity build tool from ${COVERITY_EXTRACT_DIR} to ${COVERITY_SCAN_DIR}!"
   exit 1
 fi
-
-"${TAR}" xzf "${COVERITY_SCAN_ARCHIVE}" --strip 1 -C "${COVERITY_SCAN_DIR}" || ret=$?
-
-if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to extract Coverity build tool ${COVERITY_SCAN_ARCHIVE} with code ${ret}!"
-  exit 1
-fi
-
 
 # Coverity compatibility tools
 COV_TOOLS_URL="https://raw.githubusercontent.com/acidanthera/ocbuild/master/coverity/"
@@ -136,7 +208,7 @@ for tool in "${COV_TOOLS[@]}"; do
 done
 
 # Generate compiler tools PATH overrides
-for ((i=0; $i<$COV_OVERRIDE_NUM; i++)); do
+for ((i=0; i<COV_OVERRIDE_NUM; i++)); do
   tool="${COV_OVERRIDES[$i]}"
   target="${COV_OVERRIDES_TARGETS[$i]}"
   echo "${target} \"\$@\"" > "${tool}" || ret=$?
