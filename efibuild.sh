@@ -267,7 +267,7 @@ if [ "$TOOLCHAINS" = "" ]; then
   if [ "$(unamer)" = "Darwin" ]; then
     TOOLCHAINS=('XCODE5')
   elif [ "$(unamer)" = "Windows" ]; then
-    TOOLCHAINS=('VS2017')
+    TOOLCHAINS=('VS2019')
   else
     TOOLCHAINS=('CLANGPDB' 'GCC5')
   fi
@@ -372,22 +372,22 @@ if [ "$SKIP_TESTS" != "1" ]; then
     echo "Expanded EDK_TOOLS_PATH from ${EDK_TOOLS_PATH} to ${tools}"
     export EDK_TOOLS_PATH="${tools}"
     export BASE_TOOLS_PATH="${tools}"
-    VS2017_BUILDTOOLS="C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\BuildTools"
-    VS2017_BASEPREFIX="${VS2017_BUILDTOOLS}\\VC\\Tools\\MSVC\\"
+    VS2019_BUILDTOOLS="C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools"
+    VS2019_BASEPREFIX="${VS2019_BUILDTOOLS}\\VC\\Tools\\MSVC\\"
     # Intended to use ls here to get first entry.
     # REF: https://github.com/koalaman/shellcheck/wiki/SC2012
     # shellcheck disable=SC2012
-    cd "${VS2017_BASEPREFIX}" || exit 1
+    cd "${VS2019_BASEPREFIX}" || exit 1
     # Incorrect diagnostic due to action.
     # REF: https://github.com/koalaman/shellcheck/wiki/SC2035
     # shellcheck disable=SC2035
-    VS2017_DIR="$(find * -maxdepth 0 -type d -print -quit)"
-    if [ "${VS2017_DIR}" = "" ]; then
-      echo "No VS2017 MSVC compiler"
+    VS2019_DIR="$(find * -maxdepth 0 -type d -print -quit)"
+    if [ "${VS2019_DIR}" = "" ]; then
+      echo "No VS2019 MSVC compiler"
       exit 1
     fi
     cd - || exit 1
-    export VS2017_PREFIX="${VS2017_BASEPREFIX}${VS2017_DIR}\\"
+    export VS2019_PREFIX="${VS2019_BASEPREFIX}${VS2019_DIR}\\"
 
     WINSDK_BASE="/c/Program Files (x86)/Windows Kits/10/bin"
     if [ -d "${WINSDK_BASE}" ]; then
@@ -419,7 +419,7 @@ for k,v in envs.items():
     v = ":".join(subprocess.check_output(["cygpath","-u",p]).decode("ascii").rstrip() for p in v.split(";"))
     v = v.replace("'\''",r"'\'\\\'\''")
     print("export %(k)s='\''%(v)s'\''" % locals())
-' "${VS2017_BUILDTOOLS}\\Common7\\Tools\\VsDevCmd.bat" '-arch=amd64')"
+' "${VS2019_BUILDTOOLS}\\Common7\\Tools\\VsDevCmd.bat" '-arch=amd64')"
     # Normal build similar to Unix.
     cd BaseTools || exit 1
     nmake        || exit 1
