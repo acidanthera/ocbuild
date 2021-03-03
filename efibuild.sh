@@ -361,7 +361,7 @@ if [ "$SKIP_TESTS" != "1" ]; then
   echo "Testing..."
   if [ "$(unamer)" = "Windows" ]; then
     # Configure Visual Studio environment. Requires:
-    # 1. choco install microsoft-build-tools visualcpp-build-tools nasm zip
+    # 1. choco install vswhere microsoft-build-tools visualcpp-build-tools nasm zip
     # 2. iasl in PATH for MdeModulePkg
     tools="${EDK_TOOLS_PATH}"
     tools="${tools//\//\\}"
@@ -372,7 +372,7 @@ if [ "$SKIP_TESTS" != "1" ]; then
     echo "Expanded EDK_TOOLS_PATH from ${EDK_TOOLS_PATH} to ${tools}"
     export EDK_TOOLS_PATH="${tools}"
     export BASE_TOOLS_PATH="${tools}"
-    VS2019_BUILDTOOLS="C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools"
+    VS2019_BUILDTOOLS=$(vswhere -latest -version '[16.0,17.0)' -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)
     VS2019_BASEPREFIX="${VS2019_BUILDTOOLS}\\VC\\Tools\\MSVC\\"
     # Intended to use ls here to get first entry.
     # REF: https://github.com/koalaman/shellcheck/wiki/SC2012
