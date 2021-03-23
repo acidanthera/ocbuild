@@ -351,9 +351,7 @@ for (( i=0; i<deps; i++ )) ; do
 done
 
 # Allow building non-self packages.
-if [ ! -e "${SELFPKG_DIR}" ]; then
-  symlink .. "${SELFPKG_DIR}" || exit 1
-fi
+symlink .. "${SELFPKG_DIR}" || exit 1
 
 source edksetup.sh || exit 1
 
