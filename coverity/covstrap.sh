@@ -248,16 +248,22 @@ if [ $ret -ne 0 ]; then
   exit 1
 fi
 
-${CURL} \
-  --form project="${GITHUB_REPOSITORY}" \
-  --form token="${COVERITY_SCAN_TOKEN}" \
-  --form email="${COVERITY_SCAN_EMAIL}" \
-  --form file="@${COVERITY_RESULTS_FILE}" \
-  --form version="${GITHUB_SHA}" \
-  --form description="GitHub Actions build" \
-  "https://scan.coverity.com/builds?project=${GITHUB_REPOSITORY}" || ret=$?
+upload () {
+  ${CURL} \
+    --form project="${GITHUB_REPOSITORY}" \
+    --form token="${COVERITY_SCAN_TOKEN}" \
+    --form email="${COVERITY_SCAN_EMAIL}" \
+    --form file="@${COVERITY_RESULTS_FILE}" \
+    --form version="${GITHUB_SHA}" \
+    --form description="GitHub Actions build" \
+    "https://scan.coverity.com/builds?project=${GITHUB_REPOSITORY}"
+    return $?
+}
 
-if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to upload Coverity results ${COVERITY_RESULTS_FILE} with code ${ret}!"
-  exit 1
-fi
+for attempt in {1..3}
+do
+  upload && exit 0 || ret=$?
+done
+
+echo "ERROR: Failed to upload Coverity results ${COVERITY_RESULTS_FILE} with code ${ret}!"
+exit 1
