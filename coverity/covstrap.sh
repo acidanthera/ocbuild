@@ -260,7 +260,7 @@ upload () {
     return $?
 }
 
-for attempt in {1..3}
+for i in {1..3}
 do
   upload && exit 0 || ret=$?
 done
