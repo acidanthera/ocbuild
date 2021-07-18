@@ -1,0 +1,87 @@
+From fe4aea44c5e44931be588dbb540ac50418221932 Mon Sep 17 00:00:00 2001
+From: Goldfish64 <goldfishnet@aol.com>
+Date: Tue, 29 Jun 2021 18:31:03 -0500
+Subject: [PATCH 1/2] Implement vtable fixes for 32-bit Apple kexts
+
+---
+ clang/lib/AST/VTableBuilder.cpp | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/clang/lib/AST/VTableBuilder.cpp b/clang/lib/AST/VTableBuilder.cpp
+index f5865ce96b64..77abdcf40d35 100644
+--- a/clang/lib/AST/VTableBuilder.cpp
++++ b/clang/lib/AST/VTableBuilder.cpp
+@@ -1661,6 +1661,8 @@ void ItaniumVTableBuilder::LayoutPrimaryAndSecondaryVTables(
+   if (Base.getBase() == MostDerivedClass)
+     VBaseOffsetOffsets = Builder.getVBaseOffsetOffsets();
+ 
++  uint64_t AddressPoint = Components.size();
++
+   // Add the offset to top.
+   CharUnits OffsetToTop = MostDerivedClassOffset - OffsetInLayoutClass;
+   Components.push_back(VTableComponent::MakeOffsetToTop(OffsetToTop));
+@@ -1668,7 +1670,11 @@ void ItaniumVTableBuilder::LayoutPrimaryAndSecondaryVTables(
+   // Next, add the RTTI.
+   Components.push_back(VTableComponent::MakeRTTI(MostDerivedClass));
+ 
+-  uint64_t AddressPoint = Components.size();
++  // -fapple-kext mode on 32-bit has the vtable pointer placed at the start of
++  // the vtable.
++  if (!(Context.getLangOpts().AppleKext &&
++        Context.getTargetInfo().getTriple().isArch32Bit()))
++    AddressPoint = Components.size();
+ 
+   // Now go through all virtual member functions and add them.
+   PrimaryBasesSetVectorTy PrimaryBases;
+-- 
+2.24.3 (Apple Git-128)
+
+
+From 9f869667a82aab11072807de598714bd54b49f3b Mon Sep 17 00:00:00 2001
+From: Goldfish64 <goldfishnet@aol.com>
+Date: Sat, 10 Jul 2021 18:50:28 -0500
+Subject: [PATCH 2/2] Prevent 16 byte const sections
+
+---
+ lldb/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.cpp | 2 +-
+ llvm/lib/CodeGen/TargetLoweringObjectFileImpl.cpp         | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/lldb/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.cpp b/lldb/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.cpp
+index 463a2a52f5df..54a8af9939bf 100644
+--- a/lldb/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.cpp
++++ b/lldb/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.cpp
+@@ -1526,7 +1526,7 @@ static lldb::SectionType GetSectionType(uint32_t flags,
+                       // interposing
+     return eSectionTypeCode;
+   case S_16BYTE_LITERALS: // section with only 16 byte literals
+-    return eSectionTypeData16;
++    return eSectionTypeData;
+   case S_DTRACE_DOF:
+     return eSectionTypeDebug;
+   case S_LAZY_DYLIB_SYMBOL_POINTERS:
+diff --git a/llvm/lib/CodeGen/TargetLoweringObjectFileImpl.cpp b/llvm/lib/CodeGen/TargetLoweringObjectFileImpl.cpp
+index fe64b38cf0be..1f9f051b93f8 100644
+--- a/llvm/lib/CodeGen/TargetLoweringObjectFileImpl.cpp
++++ b/llvm/lib/CodeGen/TargetLoweringObjectFileImpl.cpp
+@@ -1219,7 +1219,7 @@ MCSection *TargetLoweringObjectFileMachO::SelectSectionForGlobal(
+     if (Kind.isMergeableConst8())
+       return EightByteConstantSection;
+     if (Kind.isMergeableConst16())
+-      return SixteenByteConstantSection;
++      return DataSection;
+   }
+ 
+   // Otherwise, if it is readonly, but not something we can specially optimize,
+@@ -1259,7 +1259,7 @@ MCSection *TargetLoweringObjectFileMachO::getSectionForConstant(
+   if (Kind.isMergeableConst8())
+     return EightByteConstantSection;
+   if (Kind.isMergeableConst16())
+-    return SixteenByteConstantSection;
++    return ReadOnlySection;
+   return ReadOnlySection;  // .const
+ }
+ 
+-- 
+2.24.3 (Apple Git-128)
+
