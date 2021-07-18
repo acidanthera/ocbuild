@@ -452,12 +452,19 @@ if [ "$(type -t package)" = "function" ]; then
       rm -f Binaries/*.zip
     fi
     for rtarget in "${RTARGETS[@]}" ; do
-      if [ "$PACKAGE" = "" ] || [ "$PACKAGE" = "$rtarget" ]; then
-        package "UDK/Build/${RELPKG}/${rtarget}_${TOOLCHAINS[0]}/${ARCHS[0]}" "$rtarget" "$HASH" || exit 1
-        if [ "$NO_ARCHIVES" != "1" ]; then
-          cp "UDK/Build/${RELPKG}/${rtarget}_${TOOLCHAINS[0]}/${ARCHS[0]}"/*.zip Binaries || echo skipping
+      for toolchain in "${TOOLCHAINS[@]}" ; do
+        if [ "$PACKAGE" = "" ] || [ "$PACKAGE" = "$rtarget" ]; then
+          if [ "${#TOOLCHAINS[@]}" -eq 1 ]; then
+            name="${rtarget}"
+          else
+            name="${toolchain}_${rtarget}"
+          fi
+          package "UDK/Build/${RELPKG}/${rtarget}_${toolchain}/${ARCHS[0]}" "${name}" "${HASH}" || exit 1
+          if [ "$NO_ARCHIVES" != "1" ]; then
+            cp "UDK/Build/${RELPKG}/${rtarget}_${toolchain}/${ARCHS[0]}"/*.zip Binaries || echo skipping
+          fi
         fi
-      fi
+      done
     done
   fi
 fi
