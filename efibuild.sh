@@ -457,7 +457,7 @@ if [ "$(type -t package)" = "function" ]; then
           if [ "${#TOOLCHAINS[@]}" -eq 1 ]; then
             name="${rtarget}"
           else
-            name="${toolchain}_${rtarget}"
+            name="${toolchain}-${rtarget}"
           fi
           package "UDK/Build/${RELPKG}/${rtarget}_${toolchain}/${ARCHS[0]}" "${name}" "${HASH}" || exit 1
           if [ "$NO_ARCHIVES" != "1" ]; then
