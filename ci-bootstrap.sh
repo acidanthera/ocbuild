@@ -74,6 +74,8 @@ if [ "$(unamer)" = "Darwin" ]; then
     fi
 
     # macholib required for fix-macho32
+    which -a python3
+    which -a pip3
     pip3 install -q macholib || ret=$?
     if [ $ret -ne 0 ]; then
       echo "ERROR: Failed to install macholib with code ${ret}!"
