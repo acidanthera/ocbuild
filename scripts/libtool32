@@ -1,5 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-args="libtool $@"
-echo "${args/arch_only ACID32/arch_only i386}"
-${args/arch_only ACID32/arch_only i386}
+command="libtool $*"
+command=${command/arch_only ACID32/arch_only i386}
+echo "${command}"
+${command}

@@ -1,7 +1,5 @@
 #!/bin/bash
 
-ret=0
-
 unamer() {
   NAME="$(uname)"
 
@@ -56,31 +54,8 @@ if [ "$(unamer)" = "Darwin" ]; then
   export DEVELOPER_DIR="${!SELECTED_DEVELOPER_DIR}"
 
   if [ -n "${ACID32}" ]; then
-    if [ ! -d "MacKernelSDK" ]; then
-      echo "ERROR: ACID32 specified but missing MacKernelSDK!"
-      exit 1
-    fi
-
-    curl -LfsO "https://github.com/acidanthera/ocbuild/releases/download/llvm-kext32-latest/clang-12.zip" || ret=$?
-    if [ $ret -ne 0 ]; then
-      echo "ERROR: Failed to download clang32 with code ${ret}!"
-      exit 1
-    fi
-
-    mkdir "MacKernelSDK/clang32" && unzip -q "clang-12.zip" -d "MacKernelSDK/clang32" || ret=$?
-    if [ $ret -ne 0 ]; then
-      echo "ERROR: Failed to extract downloaded clang32 with code ${ret}!"
-      exit 1
-    fi
-
-    # macholib required for fix-macho32
-    which -a python3
-    which -a pip3
-    pip3 install -q macholib || ret=$?
-    if [ $ret -ne 0 ]; then
-      echo "ERROR: Failed to install macholib with code ${ret}!"
-      exit 1
-    fi 
+    export OVERRIDE_PYTHON3="${DEVELOPER_DIR}/usr/bin/python3"
+    src=$(curl -Lfs https://raw.githubusercontent.com/acidanthera/ocbuild/master/clang32-bootstrap.sh) && eval "$src" || exit 1
   fi
 fi
 
@@ -113,7 +88,7 @@ if [ "$(unamer)" = "Darwin" ]; then
 
   if [ -n "${ACID32}" ]; then
     colored_text "clang32 version"
-    ./MacKernelSDK/clang32/clang-12 --version
+    ./clang32/clang-12 --version
   fi 
 
   colored_text "Xcode version"
