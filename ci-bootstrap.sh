@@ -54,6 +54,7 @@ if [ "$(unamer)" = "Darwin" ]; then
   export DEVELOPER_DIR="${!SELECTED_DEVELOPER_DIR}"
 
   if [ -n "${ACID32}" ]; then
+    echo "OVERRIDE_PYTHON3=${DEVELOPER_DIR}/usr/bin/python3" >> "$GITHUB_ENV"
     export OVERRIDE_PYTHON3="${DEVELOPER_DIR}/usr/bin/python3"
     src=$(curl -Lfs https://raw.githubusercontent.com/acidanthera/ocbuild/master/clang32-bootstrap.sh) && eval "$src" || exit 1
   fi
