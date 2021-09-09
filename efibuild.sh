@@ -353,7 +353,7 @@ done
 # Allow building non-self packages.
 symlink .. "${SELFPKG_DIR}" || exit 1
 
-source edksetup.sh || exit 1
+. ./edksetup.sh || exit 1
 
 if [ "$SKIP_TESTS" != "1" ]; then
   echo "Testing..."
