@@ -171,6 +171,11 @@ fi
 echo "Downloading the certificates..."
 downloadcert
 
+# Codesign inner applications.
+echo "Codesigning application..."
+find "${apppath}"/* -name '*.app' -exec \
+  /usr/bin/codesign --force --deep --options runtime -s "Developer ID" {} \; || abort "Unable to sign inner applications"
+
 # Codesign the application.
 echo "Codesigning application..."
 /usr/bin/codesign --force --deep --options runtime -s "Developer ID" "${apppath}" || abort "Unable to sign application"
