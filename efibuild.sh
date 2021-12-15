@@ -64,7 +64,7 @@ buildme() {
   local mon_pid
   local result
 
-  build $@ &>build.log &
+  build "$@" &>build.log &
   cmd_pid=$!
 
   pingme $! build "$@" &
@@ -283,8 +283,8 @@ if [ "${RTARGETS[*]}" = "" ]; then
   RTARGETS=('DEBUG' 'RELEASE')
 fi
 
-if [ "$ARGUMENTS" = "" ]; then
-  ARGUMENTS="-D DEBUG_ON_SERIAL_PORT"
+if [ "$ARG" = "" ]; then
+  ARG="DEBUG_ON_SERIAL_PORT"
 fi
 
 SKIP_TESTS=0
@@ -438,8 +438,8 @@ if [ "$SKIP_BUILD" != "1" ]; then
     for toolchain in "${TOOLCHAINS[@]}" ; do
       for target in "${TARGETS[@]}" ; do
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
-          echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for $arch in $target with ${toolchain} and flags $ARGUMENTS ..."
-          buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" "$ARGUMENTS" || abortbuild
+          echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for $arch in $target with ${toolchain} and flag $ARG ..."
+          buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" -D "$ARG" || abortbuild
           echo " - OK"
         fi
       done
