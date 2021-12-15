@@ -64,7 +64,7 @@ buildme() {
   local mon_pid
   local result
 
-  build "$@" &>build.log &
+  build $@ &>build.log &
   cmd_pid=$!
 
   pingme $! build "$@" &
@@ -439,7 +439,7 @@ if [ "$SKIP_BUILD" != "1" ]; then
       for target in "${TARGETS[@]}" ; do
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
           echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for $arch in $target with ${toolchain} and flags $ARGUMENTS ..."
-          buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" $ARGUMENTS || abortbuild
+          buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" "$ARGUMENTS" || abortbuild
           echo " - OK"
         fi
       done
