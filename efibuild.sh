@@ -283,6 +283,10 @@ if [ "${RTARGETS[*]}" = "" ]; then
   RTARGETS=('DEBUG' 'RELEASE')
 fi
 
+if [ "$ARGUMENTS" = "" ]; then
+  ARGUMENTS="-D DEBUG_ON_SERIAL_PORT"
+fi
+
 SKIP_TESTS=0
 SKIP_BUILD=0
 SKIP_PACKAGE=0
@@ -434,8 +438,8 @@ if [ "$SKIP_BUILD" != "1" ]; then
     for toolchain in "${TOOLCHAINS[@]}" ; do
       for target in "${TARGETS[@]}" ; do
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
-          echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for $arch in $target with ${toolchain}..."
-          buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" || abortbuild
+          echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for $arch in $target with ${toolchain} and flags $ARGUMENTS ..."
+          buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" $ARGUMENTS || abortbuild
           echo " - OK"
         fi
       done
