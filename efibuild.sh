@@ -64,14 +64,10 @@ buildme() {
   local mon_pid
   local result
 
-  # shellcheck disable=SC2048
-  # shellcheck disable=SC2086
-  build $* &>build.log &
+  build "$@" &>build.log &
   cmd_pid=$!
 
-  # shellcheck disable=SC2048
-  # shellcheck disable=SC2086
-  pingme $! build $* &
+  pingme $! build "$@" &
   mon_pid=$!
 
   ## ShellCheck Exception(s)
@@ -305,7 +301,9 @@ while true; do
     shift
   elif [ "$1" == "--build-extra" ]; then
     shift
-    BUILD_ARGUMENTS="$1"
+    BUILD_STRING="$1"
+    # shellcheck disable=SC2206
+    BUILD_ARGUMENTS=($BUILD_STRING)
     shift
   else
     break
@@ -443,7 +441,7 @@ if [ "$SKIP_BUILD" != "1" ]; then
     for toolchain in "${TOOLCHAINS[@]}" ; do
       for target in "${TARGETS[@]}" ; do
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
-          echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for $arch in $target with ${toolchain} and flags $BUILD_ARGUMENTS ..."
+          echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for $arch in $target with ${toolchain} and flags $BUILD_STRING ..."
           buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" "${BUILD_ARGUMENTS[@]}" || abortbuild
           echo " - OK"
         fi
