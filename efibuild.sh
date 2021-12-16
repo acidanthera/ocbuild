@@ -287,6 +287,7 @@ SKIP_TESTS=0
 SKIP_BUILD=0
 SKIP_PACKAGE=0
 MODE=""
+BUILD_ARGUMENTS=""
 
 while true; do
   if [ "$1" == "--skip-tests" ]; then
@@ -297,6 +298,12 @@ while true; do
     shift
   elif [ "$1" == "--skip-package" ]; then
     SKIP_PACKAGE=1
+    shift
+  elif [ "$1" == "--build-extra" ]; then
+    shift
+    BUILD_STRING="$1"
+    # shellcheck disable=SC2206
+    BUILD_ARGUMENTS=($BUILD_STRING)
     shift
   else
     break
@@ -434,8 +441,8 @@ if [ "$SKIP_BUILD" != "1" ]; then
     for toolchain in "${TOOLCHAINS[@]}" ; do
       for target in "${TARGETS[@]}" ; do
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
-          echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for $arch in $target with ${toolchain}..."
-          buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" || abortbuild
+          echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for $arch in $target with ${toolchain} and flags $BUILD_STRING ..."
+          buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" "${BUILD_ARGUMENTS[@]}" || abortbuild
           echo " - OK"
         fi
       done
