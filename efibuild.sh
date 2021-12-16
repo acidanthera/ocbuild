@@ -64,9 +64,13 @@ buildme() {
   local mon_pid
   local result
 
+  # shellcheck disable=SC2048
+  # shellcheck disable=SC2086
   build $* &>build.log &
   cmd_pid=$!
 
+  # shellcheck disable=SC2048
+  # shellcheck disable=SC2086
   pingme $! build $* &
   mon_pid=$!
 

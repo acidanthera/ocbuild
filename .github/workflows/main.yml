@@ -23,4 +23,4 @@ jobs:
           HOMEBREW_NO_INSTALL_CLEANUP: 1
 
       - name: Run shellcheck
-        run: find . \( -name "*.tool" -o -name "*.command" -o -name "*.sh" \) -exec sh -c 'for TargetFile; do shellcheck --severity=warning "${TargetFile}" || exit 1; done' sh {} +
+        run: find . \( -name "*.tool" -o -name "*.command" -o -name "*.sh" \) -exec sh -c 'for TargetFile; do shellcheck --severity=info "${TargetFile}" || exit 1; done' sh {} +
