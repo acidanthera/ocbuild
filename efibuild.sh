@@ -287,7 +287,7 @@ SKIP_TESTS=0
 SKIP_BUILD=0
 SKIP_PACKAGE=0
 MODE=""
-BUILD_ARGUMENTS=""
+BUILD_ARGUMENTS=()
 
 while true; do
   if [ "$1" == "--skip-tests" ]; then
