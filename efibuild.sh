@@ -64,10 +64,10 @@ buildme() {
   local mon_pid
   local result
 
-  build "$@" &>build.log &
+  build $* &>build.log &
   cmd_pid=$!
 
-  pingme $! build "$@" &
+  pingme $! build $* &
   mon_pid=$!
 
   ## ShellCheck Exception(s)
@@ -283,14 +283,11 @@ if [ "${RTARGETS[*]}" = "" ]; then
   RTARGETS=('DEBUG' 'RELEASE')
 fi
 
-if [ "$ARG" = "" ]; then
-  ARG="DEBUG_ON_SERIAL_PORT"
-fi
-
 SKIP_TESTS=0
 SKIP_BUILD=0
 SKIP_PACKAGE=0
 MODE=""
+BUILD_ARGUMENTS=""
 
 while true; do
   if [ "$1" == "--skip-tests" ]; then
@@ -301,6 +298,10 @@ while true; do
     shift
   elif [ "$1" == "--skip-package" ]; then
     SKIP_PACKAGE=1
+    shift
+  elif [ "$1" == "--build-extra" ]; then
+    shift
+    BUILD_ARGUMENTS="$1"
     shift
   else
     break
@@ -438,8 +439,8 @@ if [ "$SKIP_BUILD" != "1" ]; then
     for toolchain in "${TOOLCHAINS[@]}" ; do
       for target in "${TARGETS[@]}" ; do
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
-          echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for $arch in $target with ${toolchain} and flag $ARG ..."
-          buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" -D "$ARG" || abortbuild
+          echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for $arch in $target with ${toolchain} and flags $BUILD_ARGUMENTS ..."
+          buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" "${BUILD_ARGUMENTS[@]}" || abortbuild
           echo " - OK"
         fi
       done
