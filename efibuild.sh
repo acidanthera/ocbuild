@@ -437,12 +437,17 @@ fi
 
 if [ "$SKIP_BUILD" != "1" ]; then
   echo "Building..."
-  for arch in "${ARCHS[@]}" ; do
+  for i in "${!ARCHS[@]}" ; do
     for toolchain in "${TOOLCHAINS[@]}" ; do
       for target in "${TARGETS[@]}" ; do
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
-          echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for $arch in $target with ${toolchain} and flags $BUILD_STRING ..."
-          buildme -a "$arch" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" "${BUILD_ARGUMENTS[@]}" || abortbuild
+          if [ "${ARCHS_EXT[i]}" == "" ]; then
+            echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for ${ARCHS[i]} in $target with ${toolchain} and flags $BUILD_STRING ..."
+            buildme -a "${ARCHS[i]}" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" "${BUILD_ARGUMENTS[@]}" || abortbuild
+          else
+            echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for ${ARCHS[i]} with extra arch ${ARCHS_EXT[i]} in $target with ${toolchain} and flags $BUILD_STRING ..."
+            buildme -a "${ARCHS_EXT[i]}" -a "${ARCHS[i]}" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" "${BUILD_ARGUMENTS[@]}" || abortbuild
+          fi
           echo " - OK"
         fi
       done
