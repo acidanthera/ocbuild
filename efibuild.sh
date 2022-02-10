@@ -321,16 +321,9 @@ if [ ! -d "Binaries" ]; then
   mkdir Binaries || exit 1
 fi
 
-if [ ! -f UDK/UDK.ready ]; then
-  rm -rf UDK
-
-  if [ "$(unamer)" != "Windows" ]; then
-    sym=$(find . -not -type d -exec file "{}" ";" | grep CRLF)
-    if [ "${sym}" != "" ]; then
-      echo "Error: the following files in the repository CRLF line endings:"
-      echo "$sym"
-      exit 1
-    fi
+if [ -d UDK ]; then
+  if [ ! -f UDK/UDK.ready ]; then
+    rm -rf UDK
   fi
 fi
 
