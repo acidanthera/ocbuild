@@ -71,9 +71,9 @@ fi
 
 # Download Coverity
 COVERITY_SCAN_DIR="${PROJECT_PATH}/cov-scan"
-COVERITY_SCAN_ARCHIVE=cov-analysis.gpg
+COVERITY_SCAN_ARCHIVE=cov-analysis.dmg
 COVERITY_SCAN_INSTALLER=cov-analysis.sh
-COVERITY_SCAN_LINK="https://scan.coverity.com/download/macOSX?token=${COVERITY_SCAN_TOKEN}&project=${GITHUB_REPOSITORY}"
+COVERITY_SCAN_LINK="https://scan.coverity.com/download/cxx/macOS?token=${COVERITY_SCAN_TOKEN}&project=${GITHUB_REPOSITORY}"
 COVERITY_KEY_LINK="https://scan.coverity.com/download/cxx/key?token=${COVERITY_SCAN_TOKEN}&project=${GITHUB_REPOSITORY}"
 COVERITY_KEY_FILE="scan_gpg.key"
 
@@ -108,22 +108,16 @@ if [ $ret -ne 0 ]; then
   exit 1
 fi
 
-"${RM}" -f "${COVERITY_SCAN_INSTALLER}"
-if [ -f "${COVERITY_SCAN_INSTALLER}" ]; then
-  echo "ERROR: Coverity build tool already exists and cannot be removed!"
+hdiutil attach "${COVERITY_SCAN_ARCHIVE}" || ret=$?
+
+if [ $ret -ne 0 ]; then
+  echo "ERROR: Failed to mount Coverity build tool with code ${ret}!"
   exit 1
 fi
 
-gpg --output "${COVERITY_SCAN_INSTALLER}" --decrypt "${COVERITY_SCAN_ARCHIVE}" || ret=$?
-
+cp $(ls /Volumes/cov-analysis-macosx-*/cov-analysis-macosx-*) "${COVERITY_SCAN_INSTALLER}" || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to decrypt Coverity build tool with code ${ret}!"
-  exit 1
-fi
-
-"${CHMOD}" a+x "${COVERITY_SCAN_INSTALLER}" || ret=$?
-if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to chmod Coverity build tool with code ${ret}!"
+  echo "ERROR: Failed to copy Coverity installer with code ${ret}!"
   exit 1
 fi
 
