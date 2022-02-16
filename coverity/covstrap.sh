@@ -73,10 +73,10 @@ fi
 COVERITY_SCAN_DIR="${PROJECT_PATH}/cov-scan"
 COVERITY_SCAN_ARCHIVE=cov-analysis.dmg
 COVERITY_SCAN_INSTALLER=cov-analysis.sh
-COVERITY_SCAN_LINK="https://scan.coverity.com/download/cxx/macOS?token=${COVERITY_SCAN_TOKEN}&project=${GITHUB_REPOSITORY}"
+COVERITY_SCAN_LINK="https://scan.coverity.com/download/cxx/macOS"
 
 echo "Downloading Coverity build tool..."
-"${CURL}" -LfsS "${COVERITY_SCAN_LINK}" -o "${COVERITY_SCAN_ARCHIVE}" || ret=$?
+"${CURL}" -LfsS "${COVERITY_SCAN_LINK}" -d "token=${COVERITY_SCAN_TOKEN}&project=${GITHUB_REPOSITORY}" -o "${COVERITY_SCAN_ARCHIVE}" || ret=$?
 
 if [ $ret -ne 0 ]; then
   echo "ERROR: Failed to download Coverity build tool with code ${ret}!"
