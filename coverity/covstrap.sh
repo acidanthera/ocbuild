@@ -115,7 +115,7 @@ if [ $ret -ne 0 ]; then
   exit 1
 fi
 
-cp $(ls /Volumes/cov-analysis-macosx-*/cov-analysis-macosx-*) "${COVERITY_SCAN_INSTALLER}" || ret=$?
+cp "$(ls /Volumes/cov-analysis-macosx-*/cov-analysis-macosx-*)" "${COVERITY_SCAN_INSTALLER}" || ret=$?
 if [ $ret -ne 0 ]; then
   echo "ERROR: Failed to copy Coverity installer with code ${ret}!"
   exit 1
