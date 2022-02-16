@@ -74,31 +74,6 @@ COVERITY_SCAN_DIR="${PROJECT_PATH}/cov-scan"
 COVERITY_SCAN_ARCHIVE=cov-analysis.dmg
 COVERITY_SCAN_INSTALLER=cov-analysis.sh
 COVERITY_SCAN_LINK="https://scan.coverity.com/download/cxx/macOS?token=${COVERITY_SCAN_TOKEN}&project=${GITHUB_REPOSITORY}"
-COVERITY_KEY_LINK="https://scan.coverity.com/download/cxx/key?token=${COVERITY_SCAN_TOKEN}&project=${GITHUB_REPOSITORY}"
-COVERITY_KEY_FILE="scan_gpg.key"
-
-ret=0
-echo "Downloading Coverity sign key..."
-"${CURL}" -LfsS "${COVERITY_KEY_LINK}" -o "${COVERITY_KEY_FILE}" || ret=$?
-
-if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to download Coverity key file with code ${ret}!"
-  exit 1
-fi
-
-gpg --import "${COVERITY_KEY_FILE}" || ret=$?
-
-if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to import Coverity key file with code ${ret}!"
-  exit 1
-fi
-
-echo "CB75BD66A8ECF4E1E20D35FC60E3EA2BA60A81E7:6:" | gpg --import-ownertrust || ret=$?
-
-if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to trust Coverity key file with code ${ret}!"
-  exit 1
-fi
 
 echo "Downloading Coverity build tool..."
 "${CURL}" -LfsS "${COVERITY_SCAN_LINK}" -o "${COVERITY_SCAN_ARCHIVE}" || ret=$?
