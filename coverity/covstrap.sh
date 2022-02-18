@@ -97,18 +97,27 @@ if [ $ret -ne 0 ]; then
   exit 1
 fi
 
-./"${COVERITY_SCAN_INSTALLER}" || ret=$?
+mkdir -p cov-analysis
+cd cov-analysis || ret=$?
+if [ $ret -ne 0 ]; then
+  echo "ERROR: Failed to cd to cov-analysis ${ret}!"
+  exit 1
+fi
+
+../"${COVERITY_SCAN_INSTALLER}" || ret=$?
 if [ $ret -ne 0 ]; then
   echo "ERROR: Failed to extract Coverity build tool with code ${ret}!"
   exit 1
 fi
 
-COVERITY_EXTRACT_DIR=$(find . -depth 1 -type d -name 'cov-analysis-*' | head -1)
+COVERITY_EXTRACT_DIR=$(pwd)
 
 if [ "${COVERITY_EXTRACT_DIR}" = "" ]; then
   echo "ERROR: Failed to find Coverity build tool directory!"
   exit 1
 fi
+
+cd ..
 
 "${RM}" -rf "${COVERITY_SCAN_DIR}"
 "${MV}" "${COVERITY_EXTRACT_DIR}" "${COVERITY_SCAN_DIR}" || ret=$?
