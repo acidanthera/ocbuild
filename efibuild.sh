@@ -22,7 +22,7 @@ updaterepo() {
   pushd "$2" >/dev/null || exit 1
   git pull --rebase --autostash
   if [ "$2" != "UDK" ] && [ "$(unamer)" != "Windows" ]; then
-    sym=$(find . -not -type d -exec file "{}" ";" | grep CRLF)
+    sym=$(find . -not -type d -not -path "./coreboot/*" -exec file "{}" ";" | grep CRLF)
     if [ "${sym}" != "" ]; then
       echo "Repository $1 named $2 contains CRLF line endings"
       echo "$sym"
@@ -325,7 +325,7 @@ if [ ! -f UDK/UDK.ready ]; then
   rm -rf UDK
 
   if [ "$(unamer)" != "Windows" ]; then
-    sym=$(find . -not -type d -exec file "{}" ";" | grep CRLF)
+    sym=$(find . -not -type d -not -path "./coreboot/*" -exec file "{}" ";" | grep CRLF)
     if [ "${sym}" != "" ]; then
       echo "Error: the following files in the repository CRLF line endings:"
       echo "$sym"
