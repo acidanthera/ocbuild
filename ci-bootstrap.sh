@@ -11,7 +11,7 @@ unamer() {
 }
 
 if [ "$(unamer)" = "Darwin" ]; then
-  XCODE_DIR="/Applications/Xcode_VERSION.app/Contents/Developer"
+  XCODE_DIR="/Applications/Xcode.app/Contents/Developer"
 
   # In GitHub Actions:
   # env:
@@ -19,15 +19,15 @@ if [ "$(unamer)" = "Darwin" ]; then
 
   case "${PROJECT_TYPE}" in 
     UEFI)
-      BUILD_DEVELOPER_DIR="${XCODE_DIR/VERSION/12.5.1}"
-      ANALYZE_DEVELOPER_DIR="${XCODE_DIR/VERSION/12.5.1}"
-      COVERITY_DEVELOPER_DIR="${XCODE_DIR/VERSION/12.5.1}"
+      BUILD_DEVELOPER_DIR="${XCODE_DIR/VERSION/13.2.1}"
+      ANALYZE_DEVELOPER_DIR="${XCODE_DIR/VERSION/13.2.1}"
+      COVERITY_DEVELOPER_DIR="${XCODE_DIR/VERSION/13.2.1}"
       ;;
     
     KEXT | TOOL)
-      BUILD_DEVELOPER_DIR="${XCODE_DIR/VERSION/12.5.1}"
-      ANALYZE_DEVELOPER_DIR="${XCODE_DIR/VERSION/12.5.1}"
-      COVERITY_DEVELOPER_DIR="${XCODE_DIR/VERSION/12.5.1}"
+      BUILD_DEVELOPER_DIR="${XCODE_DIR/VERSION/13.2.1}"
+      ANALYZE_DEVELOPER_DIR="${XCODE_DIR/VERSION/13.2.1}"
+      COVERITY_DEVELOPER_DIR="${XCODE_DIR/VERSION/13.2.1}"
       ;;
     
     *)
