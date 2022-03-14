@@ -5,6 +5,10 @@ unset PACKAGES_PATH
 
 BUILDDIR=$(pwd)
 
+if [ "$NEW_BUILDSYSTEM" = "" ]; then
+  NEW_BUILDSYSTEM=0
+fi
+
 if [ "$OFFLINE_MODE" = "" ]; then
   OFFLINE_MODE=0
 fi
