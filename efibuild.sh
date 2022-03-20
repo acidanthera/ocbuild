@@ -442,16 +442,16 @@ if [ "$NEW_BUILDSYSTEM" != "1" ]; then
       export PATH="${BASE_TOOLS}/Bin/Win32:${BASE_TOOLS}/BinWrappers/WindowsLike:$PATH"
       # Extract header paths for cl.exe to work.
       eval "$(python -c '
-  import sys, os, subprocess
-  import distutils.msvc9compiler as msvc
-  msvc.find_vcvarsall=lambda _: sys.argv[1]
-  envs=msvc.query_vcvarsall(sys.argv[2])
-  for k,v in envs.items():
-      k = k.upper()
-      v = ":".join(subprocess.check_output(["cygpath","-u",p]).decode("ascii").rstrip() for p in v.split(";"))
-      v = v.replace("'\''",r"'\'\\\'\''")
-      print("export %(k)s='\''%(v)s'\''" % locals())
-  ' "${VS2019_BUILDTOOLS}\\Common7\\Tools\\VsDevCmd.bat" '-arch=amd64')"
+import sys, os, subprocess
+import distutils.msvc9compiler as msvc
+msvc.find_vcvarsall=lambda _: sys.argv[1]
+envs=msvc.query_vcvarsall(sys.argv[2])
+for k,v in envs.items():
+    k = k.upper()
+    v = ":".join(subprocess.check_output(["cygpath","-u",p]).decode("ascii").rstrip() for p in v.split(";"))
+    v = v.replace("'\''",r"'\'\\\'\''")
+    print("export %(k)s='\''%(v)s'\''" % locals())
+' "${VS2019_BUILDTOOLS}\\Common7\\Tools\\VsDevCmd.bat" '-arch=amd64')"
       # Normal build similar to Unix.
       cd BaseTools || exit 1
       nmake        || exit 1
