@@ -97,9 +97,6 @@ fi
 # Export override variables
 export COVERITY_RESULTS_DIR="${PROJECT_PATH}/cov-int"
 
-export CC="/usr/bin/clang"
-export CXX="/usr/bin/clang++"
-
 # Refresh PATH to apply overrides
 export PATH="${COVERITY_ANALYSIS_DIR}/bin:${PATH}"
 
