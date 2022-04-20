@@ -111,7 +111,6 @@ if [ $ret -ne 0 ]; then
 fi
 
 COVERITY_EXTRACT_DIR=$(pwd)
-
 if [ "${COVERITY_EXTRACT_DIR}" = "" ]; then
   echo "ERROR: Failed to find Coverity build tool directory!"
   exit 1
@@ -121,23 +120,14 @@ cd ..
 
 "${RM}" -rf "${COVERITY_SCAN_DIR}"
 "${MV}" "${COVERITY_EXTRACT_DIR}" "${COVERITY_SCAN_DIR}" || ret=$?
-
 if [ "${COVERITY_EXTRACT_DIR}" = "" ]; then
   echo "ERROR: Failed to move Coverity build tool from ${COVERITY_EXTRACT_DIR} to ${COVERITY_SCAN_DIR}!"
   exit 1
 fi
 
-# Coverity compatibility tools
-COV_TOOLS_URL="https://raw.githubusercontent.com/acidanthera/ocbuild/master/coverity/"
-COV_TOOLS=(
-  "cov-csrutil"
-)
-
 # Export override variables
 export COVERITY_RESULTS_DIR="${PROJECT_PATH}/cov-int"
 export COVERITY_TOOLS_DIR="${PROJECT_PATH}/cov-tools"
-
-export COVERITY_CSRUTIL_PATH="${COVERITY_TOOLS_DIR}/cov-csrutil"
 export CC="/usr/bin/clang"
 export CXX="/usr/bin/clang++"
 
@@ -148,27 +138,6 @@ if [ $ret -ne 0 ]; then
   echo "ERROR: Failed to create cov-tools directory ${COVERITY_TOOLS_DIR} with code ${ret}!"
   exit 1
 fi
-
-# Prepare tools
-cd cov-tools || exit 1
-
-# Download tools to override
-for tool in "${COV_TOOLS[@]}"; do
-  url="${COV_TOOLS_URL}/${tool}"
-  "${CURL}" -LfsO "${url}" || ret=$?
-  if [ $ret -ne 0 ]; then
-    echo "ERROR: Failed to download ${tool} with code ${ret}!"
-    exit 1
-  fi
-  "${CHMOD}" a+x "${tool}" || ret=$?
-  if [ $ret -ne 0 ]; then
-    echo "ERROR: Failed to chmod ${tool} with code ${ret}!"
-    exit 1
-  fi
-done
-
-# Done with tools
-cd .. || exit 1
 
 # Refresh PATH to apply overrides
 export PATH="${COVERITY_TOOLS_DIR}:${COVERITY_SCAN_DIR}/bin:${PATH}"
