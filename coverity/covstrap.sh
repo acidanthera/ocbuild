@@ -201,11 +201,12 @@ upload () {
     --form version="${GITHUB_SHA}" \
     --form description="GitHub Actions build" \
     "https://scan.coverity.com/builds?project=${GITHUB_REPOSITORY}"
-    return $?
+  return $?
 }
 
 for i in {1..3}
 do
+  echo "Uploading results... (Trial $i/3)"
   upload && exit 0 || ret=$?
 done
 
