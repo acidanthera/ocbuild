@@ -2,14 +2,14 @@
 
 #
 #  covstrap.sh
-#  Lilu
+#  ocbuild
 #
 #  Copyright © 2018 vit9696. All rights reserved.
 #
 
 #
 #  This script is supposed to quickly bootstrap Coverity Scan environment for GitHub Actions
-#  to be later used with Lilu and plugins.
+#  to be later used with Acidanthera products.
 #
 #  Latest version available at:
 #  https://raw.githubusercontent.com/acidanthera/ocbuild/master/coverity/covstrap.sh
@@ -130,41 +130,20 @@ fi
 # Coverity compatibility tools
 COV_TOOLS_URL="https://raw.githubusercontent.com/acidanthera/ocbuild/master/coverity/"
 COV_TOOLS=(
-  "cov-cc"
-  "cov-cxx"
   "cov-csrutil"
 )
-
-COV_OVERRIDES=(
-  "clang"
-  "clang++"
-  "gcc"
-  "g++"
-)
-
-COV_OVERRIDES_TARGETS=(
-  "cov-cc"
-  "cov-cxx"
-  "cov-cc"
-  "cov-cxx"
-)
-
-COV_OVERRIDE_NUM="${#COV_OVERRIDES[@]}"
 
 # Export override variables
 export COVERITY_RESULTS_DIR="${PROJECT_PATH}/cov-int"
 export COVERITY_TOOLS_DIR="${PROJECT_PATH}/cov-tools"
 
 export COVERITY_CSRUTIL_PATH="${COVERITY_TOOLS_DIR}/cov-csrutil"
-# export CC="${COVERITY_TOOLS_DIR}/cov-cc"
-# export CXX="${COVERITY_TOOLS_DIR}/cov-cxx"
 export CC="/usr/bin/clang"
 export CXX="/usr/bin/clang++"
 
 # Prepare directory structure
 "${RM}" -rf "${COVERITY_TOOLS_DIR}"
 "${MKDIR}" "${COVERITY_TOOLS_DIR}" || ret=$?
-
 if [ $ret -ne 0 ]; then
   echo "ERROR: Failed to create cov-tools directory ${COVERITY_TOOLS_DIR} with code ${ret}!"
   exit 1
@@ -179,22 +158,6 @@ for tool in "${COV_TOOLS[@]}"; do
   "${CURL}" -LfsO "${url}" || ret=$?
   if [ $ret -ne 0 ]; then
     echo "ERROR: Failed to download ${tool} with code ${ret}!"
-    exit 1
-  fi
-  "${CHMOD}" a+x "${tool}" || ret=$?
-  if [ $ret -ne 0 ]; then
-    echo "ERROR: Failed to chmod ${tool} with code ${ret}!"
-    exit 1
-  fi
-done
-
-# Generate compiler tools PATH overrides
-for ((i=0; i<COV_OVERRIDE_NUM; i++)); do
-  tool="${COV_OVERRIDES[$i]}"
-  target="${COV_OVERRIDES_TARGETS[$i]}"
-  echo "${target} \"\$@\"" > "${tool}" || ret=$?
-  if [ $ret -ne 0 ]; then
-    echo "ERROR: Failed to generate ${tool} override to ${target} with code ${ret}!"
     exit 1
   fi
   "${CHMOD}" a+x "${tool}" || ret=$?
