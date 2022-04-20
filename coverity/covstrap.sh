@@ -156,8 +156,10 @@ export COVERITY_RESULTS_DIR="${PROJECT_PATH}/cov-int"
 export COVERITY_TOOLS_DIR="${PROJECT_PATH}/cov-tools"
 
 export COVERITY_CSRUTIL_PATH="${COVERITY_TOOLS_DIR}/cov-csrutil"
-export CC="${COVERITY_TOOLS_DIR}/cov-cc"
-export CXX="${COVERITY_TOOLS_DIR}/cov-cxx"
+# export CC="${COVERITY_TOOLS_DIR}/cov-cc"
+# export CXX="${COVERITY_TOOLS_DIR}/cov-cxx"
+export CC="/usr/bin/clang"
+export CXX="/usr/bin/clang++"
 
 # Prepare directory structure
 "${RM}" -rf "${COVERITY_TOOLS_DIR}"
