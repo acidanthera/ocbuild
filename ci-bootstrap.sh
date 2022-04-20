@@ -4,9 +4,9 @@ unamer() {
   NAME="$(uname)"
 
   if [ "$(echo "${NAME}" | grep MINGW)" != "" ] || [ "$(echo "${NAME}" | grep MSYS)" != "" ]; then
-  echo "Windows"
+    echo "Windows"
   else
-  echo "${NAME}"
+    echo "${NAME}"
   fi
 }
 
@@ -19,15 +19,15 @@ if [ "$(unamer)" = "Darwin" ]; then
 
   case "${PROJECT_TYPE}" in 
     UEFI)
-      BUILD_DEVELOPER_DIR="${XCODE_DIR/VERSION/12.5.1}"
-      ANALYZE_DEVELOPER_DIR="${XCODE_DIR/VERSION/12.5.1}"
-      COVERITY_DEVELOPER_DIR="${XCODE_DIR/VERSION/12.5.1}"
+      BUILD_DEVELOPER_DIR="${XCODE_DIR/VERSION/13.2.1}"
+      ANALYZE_DEVELOPER_DIR="${XCODE_DIR/VERSION/13.2.1}"
+      COVERITY_DEVELOPER_DIR="${XCODE_DIR/VERSION/13.2.1}"
       ;;
     
     KEXT | TOOL)
-      BUILD_DEVELOPER_DIR="${XCODE_DIR/VERSION/12.5.1}"
-      ANALYZE_DEVELOPER_DIR="${XCODE_DIR/VERSION/12.5.1}"
-      COVERITY_DEVELOPER_DIR="${XCODE_DIR/VERSION/12.5.1}"
+      BUILD_DEVELOPER_DIR="${XCODE_DIR/VERSION/13.2.1}"
+      ANALYZE_DEVELOPER_DIR="${XCODE_DIR/VERSION/13.2.1}"
+      COVERITY_DEVELOPER_DIR="${XCODE_DIR/VERSION/13.2.1}"
       ;;
     
     *)
