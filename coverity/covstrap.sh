@@ -127,20 +127,11 @@ fi
 
 # Export override variables
 export COVERITY_RESULTS_DIR="${PROJECT_PATH}/cov-int"
-export COVERITY_TOOLS_DIR="${PROJECT_PATH}/cov-tools"
 export CC="/usr/bin/clang"
 export CXX="/usr/bin/clang++"
 
-# Prepare directory structure
-"${RM}" -rf "${COVERITY_TOOLS_DIR}"
-"${MKDIR}" "${COVERITY_TOOLS_DIR}" || ret=$?
-if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to create cov-tools directory ${COVERITY_TOOLS_DIR} with code ${ret}!"
-  exit 1
-fi
-
 # Refresh PATH to apply overrides
-export PATH="${COVERITY_TOOLS_DIR}:${COVERITY_SCAN_DIR}/bin:${PATH}"
+export PATH="${COVERITY_SCAN_DIR}/bin:${PATH}"
 
 # Run Coverity
 export COVERITY_UNSUPPORTED=1
