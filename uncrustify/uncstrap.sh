@@ -7,6 +7,16 @@
 #  Copyright © 2022 PMheart. All rights reserved.
 #
 
+unamer() {
+  NAME="$(uname)"
+
+  if [ "$(echo "${NAME}" | grep MINGW)" != "" ] || [ "$(echo "${NAME}" | grep MSYS)" != "" ]; then
+    echo "Windows"
+  else
+    echo "${NAME}"
+  fi
+}
+
 updaterepo() {
   if [ ! -d "$2" ]; then
     git clone "$1" -b "$3" --depth=1 "$2" || exit 1
