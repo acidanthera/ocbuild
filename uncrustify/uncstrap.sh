@@ -131,7 +131,8 @@ if [ $ret -ne 0 ]; then
 fi
 
 FILE_LIST="filelist.txt"
-"${FIND}" ./OpenCorePkg -name '*.c' -o -name '*.h' > "${FILE_LIST}" || ret=$?
+# Exclude MsvcMath32.c as it is written in asm
+"${FIND}" ./OpenCorePkg ! -name 'MsvcMath32.c' -name '*.c' -o -name '*.h' > "${FILE_LIST}" || ret=$?
 if [ $ret -ne 0 ]; then
   echo "ERROR: Failed to dump source file list to ${FILE_LIST}!"
   exit 1
