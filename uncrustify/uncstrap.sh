@@ -131,8 +131,22 @@ if [ $ret -ne 0 ]; then
 fi
 
 FILE_LIST="filelist.txt"
-# Exclude MsvcMath32.c as it is written in asm
-"${FIND}" ./OpenCorePkg ! -name 'MsvcMath32.c' -name '*.c' -o -name '*.h' > "${FILE_LIST}" || ret=$?
+#
+# TODO: Exclude:
+# MsvcMath32.c
+# lodepng.*
+# Library/OcCompressionLib/* (except OcCompressionLib.c)
+# Utilities/_Everything but those starting with Test*_
+#
+# And more code from third-parties
+#
+"${FIND}" \
+  ./OpenCorePkg \
+  -type f \
+  ! -name 'MsvcMath32.c' \
+  ! -name 'lodepng.*' \
+  -name '*.c' -o -name '*.h' \
+  > "${FILE_LIST}" || ret=$?
 if [ $ret -ne 0 ]; then
   echo "ERROR: Failed to dump source file list to ${FILE_LIST}!"
   exit 1
