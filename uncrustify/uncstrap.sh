@@ -139,7 +139,12 @@ if [ $ret -ne 0 ]; then
 fi
 
 ./uncrustify -c "${UNCRUSTIFY_CONFIG_FILE}" -F "${FILE_LIST}" --replace --no-backup --if-changed
-cd OpenCorePkg
+cd OpenCorePkg || ret=$?
+if [ $ret -ne 0 ]; then
+  echo "ERROR: Failed to cd to OpenCorePkg directory!"
+  exit 1
+fi
+
 git diff > ../uncrustify.diff || ret=$?
 if [ $ret -ne 0 ]; then
   echo "ERROR: Failed to generate uncrustify diff with code ${ret}!"
