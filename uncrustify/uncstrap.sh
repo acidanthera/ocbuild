@@ -79,7 +79,7 @@ done
 UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12516/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
 UNCRUSTIFY_ARCHIVE="uncrustify.zip"
 
-UNCRUSTIFY_CONFIG_LINK="https://raw.githubusercontent.com/acidanthera/audk/master/.pytool/Plugin/UncrustifyCheck/uncrustify.cfg"
+UNCRUSTIFY_CONFIG_LINK="https://raw.githubusercontent.com/acidanthera/ocbuild/uncrustify/uncrustify/uncrustify.cfg"
 UNCRUSTIFY_CONFIG_FILE="uncrustify.cfg"
 
 ret=0
