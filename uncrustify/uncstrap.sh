@@ -133,10 +133,25 @@ fi
 FILE_LIST="filelist.txt"
 #
 # TODO: Exclude:
-# MsvcMath32.c
-# lodepng.*
-# Library/OcCompressionLib/* (except OcCompressionLib.c)
-# Utilities/_Everything but those starting with Test*_
+# Library/OcCompilerIntrinsicsLib/MsvcMath32.c
+# Library/OcAfterBootCompatLib/RelocationCallGate.h
+# Library/OcAppleImg4Lib/libDER
+# Library/OcAppleImg4Lib/libDERImg4
+# Library/OcAppleKernelLib/LegacyBcopy.h
+# Library/OcCompressionLib/lzss
+# Library/OcCompressionLib/lzvn
+# Library/OcCompressionLib/zlib
+# Library/OcMp3Lib/helix
+# Library/OcPngLib/lodepng.c
+# Library/OcPngLib/lodepng.h
+# Staging/OpenHfsPlus
+# Utilities/acdtinfo
+# Utilities/BaseTools
+# Utilities/disklabel/disklabel.c
+# Utilities/EfiResTool/EfiResTool.c
+# Utilities/icnspack/icnspack.c
+# Utilities/RsaTool
+# Utilities/WinNvram
 #
 # And more code from third-parties
 #
