@@ -65,10 +65,6 @@ for tool in "${TOOLS[@]}"; do
   fi
 done
 
-if [ "$(which gpg)" = "" ]; then
-  echo "ERROR: Missing GPG installation!"
-fi
-
 # Download Coverity
 COVERITY_SCAN_DIR="${PROJECT_PATH}/cov-scan"
 COVERITY_SCAN_ARCHIVE=cov-analysis.dmg
