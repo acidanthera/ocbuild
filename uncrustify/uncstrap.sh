@@ -149,7 +149,7 @@ if [ $ret -ne 0 ]; then
   exit 1
 fi
 
-git diff > ../uncrustify.diff || ret=$?
+git diff > uncrustify.diff || ret=$?
 if [ $ret -ne 0 ]; then
   echo "ERROR: Failed to generate uncrustify diff with code ${ret}!"
   exit 1
