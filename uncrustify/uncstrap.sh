@@ -42,11 +42,6 @@ if [ $? -ne 0 ] || [ ! -d "${PROJECT_PATH}" ]; then
   exit 1
 fi
 
-if [ "${WORK_BRANCH}" = "" ]; then
-  echo "ERROR: Working branch is empty!"
-  exit 1
-fi
-
 # Avoid conflicts with PATH overrides.
 CHMOD="/bin/chmod"
 CURL="/usr/bin/curl"
@@ -76,6 +71,7 @@ for tool in "${TOOLS[@]}"; do
 done
 
 # Download Uncrustify
+# TODO: Find whether there are better ways to retrieve the latest version of Uncrustify.
 UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12516/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
 UNCRUSTIFY_ARCHIVE="uncrustify.zip"
 
@@ -124,10 +120,26 @@ fi
 cd ..
 
 # clone OpenCore repo
-updaterepo "https://github.com/acidanthera/OpenCorePkg" OpenCorePkg "${WORK_BRANCH}" || ret=$?
+updaterepo "https://github.com/acidanthera/OpenCorePkg" OpenCorePkg master || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to clone OpenCorePkg branch ${WORK_BRANCH} with code ${ret}!"
+  echo "ERROR: Failed to clone OpenCorePkg/master with code ${ret}!"
   exit 1
+fi
+
+if [ "${PR_NUMBER}" != "" ]; then
+  echo "Fetching Pull Request ${PR_NUMBER}..."
+
+  git fetch origin "pull/${PR_NUMBER}/head:pr-${PR_NUMBER}" || ret=$?
+  if [ $ret -ne 0 ]; then
+    echo "ERROR: Failed to fetch OpenCorePkg PR ${PR_NUMBER} with code ${ret}!"
+    exit 1
+  fi
+
+  git checkout "pr-${PR_NUMBER}" || ret=$?
+  if [ $ret -ne 0 ]; then
+    echo "ERROR: Failed to checkout OpenCorePkg to branch pr-${PR_NUMBER} with code ${ret}!"
+    exit 1
+  fi
 fi
 
 FILE_LIST="filelist.txt"
