@@ -125,12 +125,15 @@ fi
 cd ..
 
 # clone OpenCore repo
+URL="https://github.com/${REPO_OWNER}/OpenCorePkg"
 # if this is a PR, then clone the author's master branch
 if [ "${PR_NUMBER}" != "" ]; then
-  git clone "https://github.com/${REPO_OWNER}/OpenCorePkg" --depth=1 OpenCorePkg || ret=$?
+  echo "Cloning OpenCorePkg from ${URL}..."
+  git clone "${URL}" --depth=1 OpenCorePkg || ret=$?
 else
   # if not a PR, check out this branch from the author
-  git clone "https://github.com/${REPO_OWNER}/OpenCorePkg" -b "${WORK_BRANCH}" --depth=1 OpenCorePkg || ret=$?
+  echo "Cloning OpenCorePkg from ${URL}, branch ${WORK_BRANCH}..."
+  git clone "${URL}" -b "${WORK_BRANCH}" --depth=1 OpenCorePkg || ret=$?
 fi
 if [ $ret -ne 0 ]; then
   echo "ERROR: Failed to clone ${REPO_OWNER}/OpenCorePkg with code ${ret}!"
