@@ -7,39 +7,6 @@
 #  Copyright © 2022 PMheart. All rights reserved.
 #
 
-unamer() {
-  NAME="$(uname)"
-
-  if [ "$(echo "${NAME}" | grep MINGW)" != "" ] || [ "$(echo "${NAME}" | grep MSYS)" != "" ]; then
-    echo "Windows"
-  else
-    echo "${NAME}"
-  fi
-}
-
-updaterepo() {
-  if [ ! -d "$2" ]; then
-    git clone "$1" -b "$3" --depth=1 "$2" || exit 1
-  fi
-  pushd "$2" >/dev/null || exit 1
-  git pull --rebase --autostash
-  if [ "$2" != "UDK" ] && [ "$(unamer)" != "Windows" ]; then
-    sym=$(find . -not -type d -not -path "./coreboot/*" -not -path "./UDK/*" -exec file "{}" ";" | grep CRLF)
-    if [ "${sym}" != "" ]; then
-      echo "Repository $1 named $2 contains CRLF line endings"
-      echo "$sym"
-      exit 1
-    fi
-  fi
-  git submodule update --init --recommend-shallow || exit 1
-  popd >/dev/null || exit 1
-}
-
-if [ "${REPO_OWNER}" = ""  ]; then
-  echo "ERROR: Empty repo owner!"
-  exit 1
-fi
-
 PROJECT_PATH="$(pwd)"
 # shellcheck disable=SC2181
 if [ $? -ne 0 ] || [ ! -d "${PROJECT_PATH}" ]; then
@@ -84,6 +51,13 @@ UNCRUSTIFY_CONFIG_LINK="https://raw.githubusercontent.com/acidanthera/ocbuild/un
 UNCRUSTIFY_CONFIG_FILE="uncrustify.cfg"
 
 ret=0
+"${MKDIR}" -p Uncrustify-analysis
+cd Uncrustify-analysis || ret=$?
+if [ $ret -ne 0 ]; then
+  echo "ERROR: Failed to cd to Uncrustify-analysis directory with code ${ret}!"
+  exit 1
+fi
+
 echo "Downloading Uncrustify..."
 "${CURL}" -LfsS "${UNCRUSTIFY_LINK}" -o "${UNCRUSTIFY_ARCHIVE}" || ret=$?
 if [ $ret -ne 0 ]; then
@@ -123,42 +97,32 @@ if [ $ret -ne 0 ]; then
 fi
 
 cd ..
-
-# clone OpenCore repo
-URL="https://github.com/${REPO_OWNER}/OpenCorePkg"
-# if this is a PR, then clone the author's master branch
-if [ "${PR_NUMBER}" != "" ]; then
-  echo "Cloning OpenCorePkg from ${URL}..."
-  git clone "${URL}" --depth=1 OpenCorePkg || ret=$?
-else
-  # if not a PR, check out this branch from the author
-  echo "Cloning OpenCorePkg from ${URL}, branch ${WORK_BRANCH}..."
-  git clone "${URL}" -b "${WORK_BRANCH}" --depth=1 OpenCorePkg || ret=$?
-fi
+"${RM}" -rf Executable || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to clone ${REPO_OWNER}/OpenCorePkg with code ${ret}!"
+  echo "ERROR: Failed to remove Executable directory with code ${ret}!"
   exit 1
 fi
 
+cd ..
 FILE_LIST="filelist.txt"
 "${FIND}" \
-  ./OpenCorePkg \
+  . \
   \( \
-    -path "./OpenCorePkg/UDK/*" -o \
-    -path "./OpenCorePkg/Library/OcAppleImg4Lib/libDER/*" -o \
-    -path "./OpenCorePkg/Library/OcAppleImg4Lib/libDERImg4/*" -o \
-    -path "./OpenCorePkg/Library/OcCompressionLib/lzss/*" -o \
-    -path "./OpenCorePkg/Library/OcCompressionLib/lzvn/*" -o \
-    -path "./OpenCorePkg/Library/OcCompressionLib/zlib/*" -o \
-    -path "./OpenCorePkg/Library/OcMp3Lib/helix/*" -o \
-    -path "./OpenCorePkg/Staging/OpenHfsPlus/*" -o \
-    -path "./OpenCorePkg/Utilities/acdtinfo/*" -o \
-    -path "./OpenCorePkg/Utilities/BaseTools/*" -o \
-    -path "./OpenCorePkg/Utilities/disklabel/*" -o \
-    -path "./OpenCorePkg/Utilities/EfiResTool/*" -o \
-    -path "./OpenCorePkg/Utilities/icnspack/*" -o \
-    -path "./OpenCorePkg/Utilities/RsaTool/*" -o \
-    -path "./OpenCorePkg/Utilities/WinNvram/*" -o \
+    -path "./UDK" -o \
+    -path "./Library/OcAppleImg4Lib/libDER" -o \
+    -path "./Library/OcAppleImg4Lib/libDERImg4" -o \
+    -path "./Library/OcCompressionLib/lzss" -o \
+    -path "./Library/OcCompressionLib/lzvn" -o \
+    -path "./Library/OcCompressionLib/zlib" -o \
+    -path "./Library/OcMp3Lib/helix" -o \
+    -path "./Staging/OpenHfsPlus" -o \
+    -path "./Utilities/acdtinfo" -o \
+    -path "./Utilities/BaseTools" -o \
+    -path "./Utilities/disklabel" -o \
+    -path "./Utilities/EfiResTool" -o \
+    -path "./Utilities/icnspack" -o \
+    -path "./Utilities/RsaTool" -o \
+    -path "./Utilities/WinNvram" -o \
     -name "RelocationCallGate.h" -o \
     -name "libDER_config.h" -o \
     -name "LegacyBcopy.h" -o \
@@ -178,10 +142,10 @@ if [ $ret -ne 0 ]; then
   exit 1
 fi
 
-./uncrustify -c "${UNCRUSTIFY_CONFIG_FILE}" -F "${FILE_LIST}" --replace --no-backup --if-changed
-cd OpenCorePkg || ret=$?
+./Uncrustify-analysis/uncrustify -c ./Uncrustify-analysis/"${UNCRUSTIFY_CONFIG_FILE}" -F "${FILE_LIST}" --replace --no-backup --if-changed
+"${RM}" -rf Uncrustify-analysis "${FILE_LIST}" || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to cd to OpenCorePkg directory!"
+  echo "ERROR: Failed to cleanup Uncrustify-analysis dir and file list!"
   exit 1
 fi
 
