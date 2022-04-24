@@ -35,6 +35,11 @@ updaterepo() {
   popd >/dev/null || exit 1
 }
 
+if [ "${REPO_OWNER}" = ""  ]; then
+  echo "ERROR: Empty repo owner!"
+  exit 1
+fi
+
 PROJECT_PATH="$(pwd)"
 # shellcheck disable=SC2181
 if [ $? -ne 0 ] || [ ! -d "${PROJECT_PATH}" ]; then
@@ -120,26 +125,16 @@ fi
 cd ..
 
 # clone OpenCore repo
-updaterepo "https://github.com/acidanthera/OpenCorePkg" OpenCorePkg master || ret=$?
-if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to clone OpenCorePkg/master with code ${ret}!"
-  exit 1
-fi
-
+# if this is a PR, then clone the author's master branch
 if [ "${PR_NUMBER}" != "" ]; then
-  echo "Fetching Pull Request ${PR_NUMBER}..."
-
-  git fetch origin "pull/${PR_NUMBER}/head:pr-${PR_NUMBER}" || ret=$?
-  if [ $ret -ne 0 ]; then
-    echo "ERROR: Failed to fetch OpenCorePkg PR ${PR_NUMBER} with code ${ret}!"
-    exit 1
-  fi
-
-  git checkout "pr-${PR_NUMBER}" || ret=$?
-  if [ $ret -ne 0 ]; then
-    echo "ERROR: Failed to checkout OpenCorePkg to branch pr-${PR_NUMBER} with code ${ret}!"
-    exit 1
-  fi
+  git clone "https://github.com/${REPO_OWNER}/OpenCorePkg" --depth=1 OpenCorePkg || ret=$?
+else
+  # if not a PR, check out this branch from the author
+  git clone "https://github.com/${REPO_OWNER}/OpenCorePkg" -b "${WORK_BRANCH}" --depth=1 OpenCorePkg || ret=$?
+fi
+if [ $ret -ne 0 ]; then
+  echo "ERROR: Failed to clone ${REPO_OWNER}/OpenCorePkg with code ${ret}!"
+  exit 1
 fi
 
 FILE_LIST="filelist.txt"
