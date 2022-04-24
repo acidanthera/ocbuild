@@ -131,36 +131,37 @@ if [ $ret -ne 0 ]; then
 fi
 
 FILE_LIST="filelist.txt"
-#
-# TODO: Exclude:
-# Library/OcCompilerIntrinsicsLib/MsvcMath32.c
-# Library/OcAfterBootCompatLib/RelocationCallGate.h
-# Library/OcAppleImg4Lib/libDER
-# Library/OcAppleImg4Lib/libDERImg4
-# Library/OcAppleKernelLib/LegacyBcopy.h
-# Library/OcCompressionLib/lzss
-# Library/OcCompressionLib/lzvn
-# Library/OcCompressionLib/zlib
-# Library/OcMp3Lib/helix
-# Library/OcPngLib/lodepng.c
-# Library/OcPngLib/lodepng.h
-# Staging/OpenHfsPlus
-# Utilities/acdtinfo
-# Utilities/BaseTools
-# Utilities/disklabel/disklabel.c
-# Utilities/EfiResTool/EfiResTool.c
-# Utilities/icnspack/icnspack.c
-# Utilities/RsaTool
-# Utilities/WinNvram
-#
-# And more code from third-parties
-#
 "${FIND}" \
   ./OpenCorePkg \
+  \( \
+    -path "./OpenCorePkg/UDK/*" -o \
+    -path "./OpenCorePkg/Library/OcAppleImg4Lib/libDER/*" -o \
+    -path "./OpenCorePkg/Library/OcAppleImg4Lib/libDERImg4/*" -o \
+    -path "./OpenCorePkg/Library/OcCompressionLib/lzss/*" -o \
+    -path "./OpenCorePkg/Library/OcCompressionLib/lzvn/*" -o \
+    -path "./OpenCorePkg/Library/OcCompressionLib/zlib/*" -o \
+    -path "./OpenCorePkg/Library/OcMp3Lib/helix/*" -o \
+    -path "./OpenCorePkg/Staging/OpenHfsPlus/*" -o \
+    -path "./OpenCorePkg/Utilities/acdtinfo/*" -o \
+    -path "./OpenCorePkg/Utilities/BaseTools/*" -o \
+    -path "./OpenCorePkg/Utilities/disklabel/*" -o \
+    -path "./OpenCorePkg/Utilities/EfiResTool/*" -o \
+    -path "./OpenCorePkg/Utilities/icnspack/*" -o \
+    -path "./OpenCorePkg/Utilities/RsaTool/*" -o \
+    -path "./OpenCorePkg/Utilities/WinNvram/*" -o \
+    -name "RelocationCallGate.h" -o \
+    -name "libDER_config.h" -o \
+    -name "LegacyBcopy.h" -o \
+    -name "MsvcMath32.c" -o \
+    -name "lodepng.c" -o \
+    -name "lodepng.h" -o \
+    -name "Ubsan.c" -o \
+    -name "Ubsan.h" -o \
+    -name "UbsanPrintf.c" \
+  \) \
+  -prune -o \
   -type f \
-  ! -name 'MsvcMath32.c' \
-  ! -name 'lodepng.*' \
-  -name '*.c' -o -name '*.h' \
+  -name "*.[c\|h]" -print \
   > "${FILE_LIST}" || ret=$?
 if [ $ret -ne 0 ]; then
   echo "ERROR: Failed to dump source file list to ${FILE_LIST}!"
