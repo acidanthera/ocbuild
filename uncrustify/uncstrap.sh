@@ -7,11 +7,15 @@
 #  Copyright © 2022 PMheart. All rights reserved.
 #
 
+abort() {
+  echo "ERROR: $1!"
+  exit 1
+}
+
 PROJECT_PATH="$(pwd)"
 # shellcheck disable=SC2181
 if [ $? -ne 0 ] || [ ! -d "${PROJECT_PATH}" ]; then
-  echo "ERROR: Failed to determine working directory!"
-  exit 1
+  abort "Failed to determine working directory"
 fi
 
 # Avoid conflicts with PATH overrides.
@@ -39,8 +43,7 @@ TOOLS=(
 
 for tool in "${TOOLS[@]}"; do
   if [ ! -x "${tool}" ]; then
-    echo "ERROR: Missing ${tool}!"
-    exit 1
+    abort "Missing ${tool}"
   fi
 done
 
@@ -56,53 +59,45 @@ ret=0
 "${MKDIR}" -p Uncrustify-analysis
 cd Uncrustify-analysis || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to cd to Uncrustify-analysis directory with code ${ret}!"
-  exit 1
+  abort "Failed to cd to Uncrustify-analysis directory with code ${ret}"
 fi
 
 echo "Downloading Uncrustify..."
 "${CURL}" -LfsS "${UNCRUSTIFY_LINK}" -o "${UNCRUSTIFY_ARCHIVE}" || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to download Uncrustify with code ${ret}!"
-  exit 1
+  abort "Failed to download Uncrustify with code ${ret}"
 fi
 
 echo "Downloading Uncrustify Config..."
 "${CURL}" -LfsS "${UNCRUSTIFY_CONFIG_LINK}" -o "${UNCRUSTIFY_CONFIG_FILE}" || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to download Uncrustify Config with code ${ret}!"
-  exit 1
+  abort "Failed to download Uncrustify Config with code ${ret}"
 fi
 
 "${UNZIP}" -q "${UNCRUSTIFY_ARCHIVE}" || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to decompress Uncrustify with code ${ret}!"
-  exit 1
+  abort "Failed to decompress Uncrustify with code ${ret}"
 fi
 
 cd Executable || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to cd to Uncrustify Executable with code ${ret}!"
-  exit 1
+  abort "Failed to cd to Uncrustify Executable with code ${ret}"
 fi
 
 "${CHMOD}" a+x ./uncrustify || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to chmod uncrustify with code ${ret}!"
-  exit 1
+  abort "Failed to chmod uncrustify with code ${ret}"
 fi
 
 "${MV}" ./uncrustify .. || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to move uncrustify to parent directory with code ${ret}!"
-  exit 1
+  abort "Failed to move uncrustify to parent directory with code ${ret}"
 fi
 
 cd ..
 "${RM}" -rf Executable || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to remove Executable directory with code ${ret}!"
-  exit 1
+  abort "Failed to remove Executable directory with code ${ret}"
 fi
 
 cd ..
@@ -146,26 +141,22 @@ FILE_LIST="filelist.txt"
   -name "*.[c\|h]" -print \
   > "${FILE_LIST}" || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to dump source file list to ${FILE_LIST}!"
-  exit 1
+  abort "Failed to dump source file list to ${FILE_LIST}"
 fi
 
 ./Uncrustify-analysis/uncrustify -c ./Uncrustify-analysis/"${UNCRUSTIFY_CONFIG_FILE}" -F "${FILE_LIST}" --replace --no-backup --if-changed
 "${RM}" -rf Uncrustify-analysis "${FILE_LIST}" || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to cleanup Uncrustify-analysis dir and file list!"
-  exit 1
+  abort "Failed to cleanup Uncrustify-analysis dir and file list"
 fi
 
 git diff > uncrustify.diff || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to generate uncrustify diff with code ${ret}!"
-  exit 1
+  abort "Failed to generate uncrustify diff with code ${ret}"
 fi
 
 if [ "$(${CAT} uncrustify.diff)" != "" ]; then
-  echo "ERROR: Uncrustify detects codestyle problems! Please fix!"
-  exit 1
+  abort "Uncrustify detects codestyle problems! Please fix"
 fi
 
 exit 0

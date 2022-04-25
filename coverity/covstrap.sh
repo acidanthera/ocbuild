@@ -18,27 +18,27 @@
 #  src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/ocbuild/master/coverity/covstrap.sh) && eval "$src" || exit 1
 #
 
+abort() {
+  echo "ERROR: $1!"
+  exit 1
+}
 
 PROJECT_PATH="$(pwd)"
 # shellcheck disable=SC2181
 if [ $? -ne 0 ] || [ ! -d "${PROJECT_PATH}" ]; then
-  echo "ERROR: Failed to determine working directory!"
-  exit 1
+  abort "Failed to determine working directory"
 fi
 
 if [ "${COVERITY_SCAN_TOKEN}" = "" ]; then
-  echo "ERROR: No COVERITY_SCAN_TOKEN provided!"
-  exit 1
+  abort "No COVERITY_SCAN_TOKEN provided"
 fi
 
 if [ "${COVERITY_SCAN_EMAIL}" = "" ]; then
-  echo "ERROR: No COVERITY_SCAN_EMAIL provided!"
-  exit 1
+  abort "No COVERITY_SCAN_EMAIL provided"
 fi
 
 if [ "${GITHUB_REPOSITORY}" = "" ]; then
-  echo "ERROR: No GITHUB_REPOSITORY provided!"
-  exit 1
+  abort "No GITHUB_REPOSITORY provided"
 fi
 
 # Avoid conflicts with PATH overrides.
@@ -57,11 +57,9 @@ TOOLS=(
   "${RM}"
   "${TAR}"
 )
-
 for tool in "${TOOLS[@]}"; do
   if [ ! -x "${tool}" ]; then
-    echo "ERROR: Missing ${tool}!"
-    exit 1
+    abort "Missing ${tool}"
   fi
 done
 
@@ -74,51 +72,41 @@ COVERITY_SCAN_LINK="https://scan.coverity.com/download/cxx/macOSX"
 ret=0
 echo "Downloading Coverity build tool..."
 "${CURL}" -LfsS "${COVERITY_SCAN_LINK}" -d "token=${COVERITY_SCAN_TOKEN}&project=${GITHUB_REPOSITORY}" -o "${COVERITY_SCAN_ARCHIVE}" || ret=$?
-
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to download Coverity build tool with code ${ret}!"
-  exit 1
+  abort "Failed to download Coverity build tool with code ${ret}"
 fi
 
 hdiutil attach "${COVERITY_SCAN_ARCHIVE}" || ret=$?
-
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to mount Coverity build tool with code ${ret}!"
-  exit 1
+  abort "Failed to mount Coverity build tool with code ${ret}"
 fi
 
 cp "$(ls /Volumes/cov-analysis-macosx-*/cov-analysis-macosx-*)" "${COVERITY_SCAN_INSTALLER}" || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to copy Coverity installer with code ${ret}!"
-  exit 1
+  abort "Failed to copy Coverity installer with code ${ret}"
 fi
 
 mkdir -p cov-analysis
 cd cov-analysis || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to cd to cov-analysis ${ret}!"
-  exit 1
+  abort "Failed to cd to cov-analysis ${ret}"
 fi
 
 ../"${COVERITY_SCAN_INSTALLER}" || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to extract Coverity build tool with code ${ret}!"
-  exit 1
+  abort "Failed to extract Coverity build tool with code ${ret}"
 fi
 
 COVERITY_EXTRACT_DIR=$(pwd)
 if [ "${COVERITY_EXTRACT_DIR}" = "" ]; then
-  echo "ERROR: Failed to find Coverity build tool directory!"
-  exit 1
+  abort "Failed to find Coverity build tool directory"
 fi
 
 cd ..
-
 "${RM}" -rf "${COVERITY_SCAN_DIR}"
 "${MV}" "${COVERITY_EXTRACT_DIR}" "${COVERITY_SCAN_DIR}" || ret=$?
 if [ "${COVERITY_EXTRACT_DIR}" = "" ]; then
-  echo "ERROR: Failed to move Coverity build tool from ${COVERITY_EXTRACT_DIR} to ${COVERITY_SCAN_DIR}!"
-  exit 1
+  abort "Failed to move Coverity build tool from ${COVERITY_EXTRACT_DIR} to ${COVERITY_SCAN_DIR}"
 fi
 
 # Export override variables
@@ -133,19 +121,15 @@ export PATH="${COVERITY_SCAN_DIR}/bin:${PATH}"
 export COVERITY_UNSUPPORTED=1
 # shellcheck disable=SC2086
 cov-build --dir "${COVERITY_RESULTS_DIR}" ${COVERITY_BUILD_COMMAND} || ret=$?
-
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Coverity build tool failed with code ${ret}!"
-  exit 1
+  abort "Coverity build tool failed with code ${ret}"
 fi
 
 # Upload results
 COVERITY_RESULTS_FILE=results.tgz
 ${TAR} czf "${COVERITY_RESULTS_FILE}" -C "${COVERITY_RESULTS_DIR}/.." "$(basename "${COVERITY_RESULTS_DIR}")" || ret=$?
-
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to compress Coverity results dir ${COVERITY_RESULTS_DIR} with code ${ret}!"
-  exit 1
+  abort "Failed to compress Coverity results dir ${COVERITY_RESULTS_DIR} with code ${ret}"
 fi
 
 upload () {
@@ -165,6 +149,4 @@ do
   echo "Uploading results... (Trial $i/3)"
   upload && exit 0 || ret=$?
 done
-
-echo "ERROR: Failed to upload Coverity results ${COVERITY_RESULTS_FILE} with code ${ret}!"
-exit 1
+abort "Failed to upload Coverity results ${COVERITY_RESULTS_FILE} with code ${ret}"

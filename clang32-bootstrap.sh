@@ -1,5 +1,10 @@
 #!/bin/bash
 
+abort() {
+  echo "ERROR: $1!"
+  exit 1
+}
+
 ret=0
 
 # Avoid conflicts with PATH overrides.
@@ -26,20 +31,17 @@ CLANG32_ZIP="clang-12.zip"
 
 "${CURL}" -LfsO "https://github.com/acidanthera/ocbuild/releases/download/llvm-kext32-latest/${CLANG32_ZIP}" || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to download clang32 with code ${ret}!"
-  exit 1
+  abort "Failed to download clang32 with code ${ret}"
 fi
 
 "${MKDIR}" "${CLANG32_DIR}"
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to create clang32 directory with code ${ret}!"
-  exit 1
+  abort "Failed to create clang32 directory with code ${ret}"
 fi
 
 "${UNZIP}" -q "${CLANG32_ZIP}" -d "${CLANG32_DIR}" || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to extract downloaded clang32 with code ${ret}!"
-  exit 1
+  abort "Failed to extract downloaded clang32 with code ${ret}"
 fi
 
 "${RM}" -rf "${CLANG32_ZIP}"
@@ -49,19 +51,16 @@ for tool in "${CLANG32_SCRIPTS[@]}"; do
   url="${CLANG32_SCRIPTS_URL}/${tool}"
   "${CURL}" -Lfs "${url}" -o "${CLANG32_DIR}/${tool}" || ret=$?
   if [ $ret -ne 0 ]; then
-    echo "ERROR: Failed to download ${tool} with code ${ret}!"
-    exit 1
+    abort "Failed to download ${tool} with code ${ret}"
   fi
   "${CHMOD}" a+x "${CLANG32_DIR}/${tool}" || ret=$?
   if [ $ret -ne 0 ]; then
-    echo "ERROR: Failed to chmod ${tool} with code ${ret}!"
-    exit 1
+    abort "Failed to chmod ${tool} with code ${ret}"
   fi
 done
 
 # macholib required for fix-macho32
 "${OVERRIDE_PYTHON3}" -m pip install --disable-pip-version-check --user -q macholib || ret=$?
 if [ $ret -ne 0 ]; then
-  echo "ERROR: Failed to install macholib with code ${ret}!"
-  exit 1
+  abort "Failed to install macholib with code ${ret}"
 fi

@@ -1,5 +1,10 @@
 #!/bin/bash
 
+abort() {
+  echo "ERROR: $1!"
+  exit 1
+}
+
 unamer() {
   NAME="$(uname)"
 
@@ -31,8 +36,7 @@ if [ "$(unamer)" = "Darwin" ]; then
       ;;
     
     *)
-      echo "ERROR: Invalid project type!"
-      exit 1
+      abort "Invalid project type"
       ;;
   esac
 
@@ -44,8 +48,7 @@ if [ "$(unamer)" = "Darwin" ]; then
   export SELECTED_DEVELOPER_DIR
 
   if [ -z "${!SELECTED_DEVELOPER_DIR}" ]; then
-    echo "ERROR: Invalid or missing job type!"
-    exit 1
+    abort "Invalid or missing job type"
   fi
 
   echo "DEVELOPER_DIR=${!SELECTED_DEVELOPER_DIR}" >> "$GITHUB_ENV"
