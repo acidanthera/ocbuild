@@ -121,6 +121,7 @@ FILE_LIST="filelist.txt"
     -path "./Utilities/disklabel" -o \
     -path "./Utilities/EfiResTool" -o \
     -path "./Utilities/icnspack" -o \
+    -path "./Utilities/LogoutHook" -o \
     -path "./Utilities/macserial" -o \
     -path "./Utilities/RsaTool" -o \
     -path "./Utilities/WinNvram" -o \
@@ -134,7 +135,9 @@ FILE_LIST="filelist.txt"
     -name "Ubsan.c" -o \
     -name "Ubsan.h" -o \
     -name "UbsanPrintf.c" -o \
-    -name "UmmMalloc.c" \
+    -name "UmmMalloc.c" -o \
+    -name "UserPseudoRandom.c" -o \
+    -name "UserPseudoRandom.h" \
   \) \
   -prune -o \
   -type f \
