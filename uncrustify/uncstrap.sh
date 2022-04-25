@@ -15,6 +15,7 @@ if [ $? -ne 0 ] || [ ! -d "${PROJECT_PATH}" ]; then
 fi
 
 # Avoid conflicts with PATH overrides.
+CAT="/bin/cat"
 CHMOD="/bin/chmod"
 CURL="/usr/bin/curl"
 FIND="/usr/bin/find"
@@ -25,6 +26,7 @@ TAR="/usr/bin/tar"
 UNZIP="/usr/bin/unzip"
 
 TOOLS=(
+  "${CAT}"
   "${CHMOD}"
   "${CURL}"
   "${FIND}"
@@ -158,6 +160,11 @@ fi
 git diff > uncrustify.diff || ret=$?
 if [ $ret -ne 0 ]; then
   echo "ERROR: Failed to generate uncrustify diff with code ${ret}!"
+  exit 1
+fi
+
+if [ "$(${CAT} uncrustify.diff)" != "" ]; then
+  echo "ERROR: Uncrustify detects codestyle problems! Please fix!"
   exit 1
 fi
 
