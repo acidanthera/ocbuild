@@ -156,6 +156,8 @@ if [ $ret -ne 0 ]; then
 fi
 
 if [ "$(${CAT} uncrustify.diff)" != "" ]; then
+  # show the diff
+  "${CAT}" uncrustify.diff
   abort "Uncrustify detects codestyle problems! Please fix"
 fi
 
