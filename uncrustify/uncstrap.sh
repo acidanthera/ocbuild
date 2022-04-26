@@ -122,18 +122,3 @@ case "$(unamer)" in
     abort "Unsupported OS distribution"
   ;;
 esac
-
-# "${UNC_EXEC}" -c ./Uncrustify-analysis/"${UNCRUSTIFY_CONFIG_FILE}" -F "${FILE_LIST}" --replace --no-backup --if-changed
-
-# git diff > uncrustify.diff || ret=$?
-# if [ $ret -ne 0 ]; then
-#   abort "Failed to generate Uncrustify diff with code ${ret}"
-# fi
-
-# if [ "$(${CAT} uncrustify.diff)" != "" ]; then
-#   # show the diff
-#   "${CAT}" uncrustify.diff
-#   abort "Uncrustify detects codestyle problems! Please fix"
-# fi
-
-exit 0
