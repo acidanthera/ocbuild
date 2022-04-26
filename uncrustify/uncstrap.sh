@@ -55,30 +55,6 @@ if [ "$(which cmake)" = "" ]; then
   abort "Missing cmake"
 fi
 
-UNCRUSTIFY_LINK=""
-case "$(unamer)" in
-  Darwin )
-    UNCRUSTIFY_LINK="https://projectmu@dev.azure.com/projectmu/Uncrustify/_git/Uncrustify"
-    build_bin "${UNCRUSTIFY_LINK}"
-  ;;
-
-  Linux )
-    UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12516/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
-    download_bin "${UNCRUSTIFY_LINK}"
-  ;;
-
-  Windows )
-    UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12518/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
-    download_bin "${UNCRUSTIFY_LINK}"
-  ;;
-
-  * )
-    abort "Unsupported OS distribution"
-  ;;
-esac
-
-ret=0
-
 build_bin() {
   local link="$1"
   
@@ -115,6 +91,28 @@ download_bin() {
   cd ../..
   "${RM}" -rf Uncrustify-analysis || abort "Failed to cleanup Uncrustify-analysis dir with code $?"
 }
+
+UNCRUSTIFY_LINK=""
+case "$(unamer)" in
+  Darwin )
+    UNCRUSTIFY_LINK="https://projectmu@dev.azure.com/projectmu/Uncrustify/_git/Uncrustify"
+    build_bin "${UNCRUSTIFY_LINK}"
+  ;;
+
+  Linux )
+    UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12516/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
+    download_bin "${UNCRUSTIFY_LINK}"
+  ;;
+
+  Windows )
+    UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12518/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
+    download_bin "${UNCRUSTIFY_LINK}"
+  ;;
+
+  * )
+    abort "Unsupported OS distribution"
+  ;;
+esac
 
 # "${UNC_EXEC}" -c ./Uncrustify-analysis/"${UNCRUSTIFY_CONFIG_FILE}" -F "${FILE_LIST}" --replace --no-backup --if-changed
 
