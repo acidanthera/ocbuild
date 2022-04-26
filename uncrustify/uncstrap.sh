@@ -57,9 +57,10 @@ fi
 
 build_bin() {
   local link="$1"
-  
-  git clone "${link}" --depth=1 Uncrustify || abort "Failed to clone Uncrustify"
-  cd Uncrustify || abort "Failed to cd to Uncrustify project repo"
+  UNCRUSTIFY_REPO=Uncrustify-repo
+
+  git clone "${link}" --depth=1 "${UNCRUSTIFY_REPO}" || abort "Failed to clone Uncrustify"
+  cd "${UNCRUSTIFY_REPO}" || abort "Failed to cd to Uncrustify project repo"
   mkdir build || abort "Failed to make temporary build directory"
   cd build || abort "Failed to cd to temporary build directory"
   cmake .. || abort "Failed to generate makefile with cmake"
@@ -70,7 +71,7 @@ build_bin() {
   "${MV}" "${UNC_EXEC}" ../../.. || abort "Failed to move ${UNC_EXEC} to parent directory with code $?"
 
   cd ../../..
-  "${RM}" -rf Uncrustify || abort "Failed to cleanup Uncrustify repo dir with code $?"
+  "${RM}" -rf "${UNCRUSTIFY_REPO}" || abort "Failed to cleanup Uncrustify repo dir with code $?"
 }
 
 download_bin() {
