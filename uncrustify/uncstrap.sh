@@ -64,6 +64,13 @@ build_bin() {
   cd build || abort "Failed to cd to temporary build directory"
   cmake .. || abort "Failed to generate makefile with cmake"
   cmake --build . || abort "Failed to build Uncrustify"
+
+  export UNC_EXEC=./uncrustify
+
+  "${MV}" "${UNC_EXEC}" ../../.. || abort "Failed to move ${UNC_EXEC} to parent directory with code $?"
+
+  cd ../../..
+  "${RM}" -rf Uncrustify || abort "Failed to cleanup Uncrustify repo dir with code $?"
 }
 
 download_bin() {
