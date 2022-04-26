@@ -61,8 +61,9 @@ build_bin() {
   git clone "${link}" --depth=1 Uncrustify || abort "Failed to clone Uncrustify"
   cd Uncrustify || abort "Failed to cd to Uncrustify project repo"
   mkdir build || abort "Failed to make temporary build directory"
-  cmake ..
-  cmake --build .
+  cd build || abort "Failed to cd to temporary build directory"
+  cmake .. || abort "Failed to generate makefile with cmake"
+  cmake --build . || abort "Failed to build Uncrustify"
 }
 
 download_bin() {
