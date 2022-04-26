@@ -51,21 +51,25 @@ for tool in "${TOOLS[@]}"; do
   fi
 done
 
+if [ "$(which cmake)" = "" ]; then
+  abort "Missing cmake"
+fi
+
 UNCRUSTIFY_LINK=""
-UNCRUSTIFY_ARCHIVE="uncrustify.zip"
 case "$(unamer)" in
   Darwin )
-    # we will build binaries for macOS
-    # TODO: build & fix link
-    UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12516/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
+    UNCRUSTIFY_LINK="https://projectmu@dev.azure.com/projectmu/Uncrustify/_git/Uncrustify"
+    build_bin "${UNCRUSTIFY_LINK}"
   ;;
 
   Linux )
     UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12516/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
+    download_bin "${UNCRUSTIFY_LINK}"
   ;;
 
   Windows )
     UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12518/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
+    download_bin "${UNCRUSTIFY_LINK}"
   ;;
 
   * )
@@ -74,48 +78,43 @@ case "$(unamer)" in
 esac
 
 ret=0
-"${MKDIR}" -p Uncrustify-analysis
-cd Uncrustify-analysis || ret=$?
-if [ $ret -ne 0 ]; then
-  abort "Failed to cd to Uncrustify-analysis directory with code ${ret}"
-fi
 
-echo "Downloading Uncrustify..."
-"${CURL}" -LfsS "${UNCRUSTIFY_LINK}" -o "${UNCRUSTIFY_ARCHIVE}" || ret=$?
-if [ $ret -ne 0 ]; then
-  abort "Failed to download Uncrustify with code ${ret}"
-fi
+build_bin() {
+  local link="$1"
+  
+  git clone "${link}" --depth=1 Uncrustify || abort "Failed to clone Uncrustify"
+  cd Uncrustify || abort "Failed to cd to Uncrustify project repo"
+  mkdir build || abort "Failed to make temporary build directory"
+  cmake ..
+  cmake --build .
+}
 
-"${UNZIP}" -q "${UNCRUSTIFY_ARCHIVE}" || ret=$?
-if [ $ret -ne 0 ]; then
-  abort "Failed to decompress Uncrustify with code ${ret}"
-fi
+download_bin() {
+  local link="$1"
+  local UNCRUSTIFY_ARCHIVE="uncrustify.zip"
 
-cd Executable || ret=$?
-if [ $ret -ne 0 ]; then
-  abort "Failed to cd to Uncrustify Executable with code ${ret}"
-fi
+  "${MKDIR}" -p Uncrustify-analysis
+  cd Uncrustify-analysis || abort "Failed to cd to Uncrustify-analysis directory with code $?"
 
-export UNC_EXEC=./uncrustify
-if [ "$(unamer)" = "Windows" ]; then
-  export UNC_EXEC=./uncrustify.exe
-fi
+  echo "Downloading Uncrustify..."
+  "${CURL}" -LfsS "${link}" -o "${UNCRUSTIFY_ARCHIVE}" || abort "Failed to download Uncrustify with code $?"
 
-"${CHMOD}" a+x "${UNC_EXEC}" || ret=$?
-if [ $ret -ne 0 ]; then
-  abort "Failed to chmod ${UNC_EXEC} with code ${ret}"
-fi
+  "${UNZIP}" -q "${UNCRUSTIFY_ARCHIVE}" || abort "Failed to decompress Uncrustify with code $?"
 
-"${MV}" "${UNC_EXEC}" ../.. || ret=$?
-if [ $ret -ne 0 ]; then
-  abort "Failed to move ${UNC_EXEC} to parent directory with code ${ret}"
-fi
+  cd Executable || abort "Failed to cd to Uncrustify Executable with code $?"
 
-cd ../..
-"${RM}" -rf Uncrustify-analysis || ret=$?
-if [ $ret -ne 0 ]; then
-  abort "Failed to cleanup Uncrustify-analysis dir"
-fi
+  export UNC_EXEC=./uncrustify
+  if [ "$(unamer)" = "Windows" ]; then
+    export UNC_EXEC=./uncrustify.exe
+  fi
+
+  "${CHMOD}" a+x "${UNC_EXEC}" || abort "Failed to chmod ${UNC_EXEC} with code $?"
+
+  "${MV}" "${UNC_EXEC}" ../.. || abort "Failed to move ${UNC_EXEC} to parent directory with code $?"
+
+  cd ../..
+  "${RM}" -rf Uncrustify-analysis || abort "Failed to cleanup Uncrustify-analysis dir with code $?"
+}
 
 # "${UNC_EXEC}" -c ./Uncrustify-analysis/"${UNCRUSTIFY_CONFIG_FILE}" -F "${FILE_LIST}" --replace --no-backup --if-changed
 
