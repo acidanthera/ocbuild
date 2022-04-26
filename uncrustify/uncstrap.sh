@@ -68,9 +68,9 @@ build_bin() {
 
   export UNC_EXEC=./uncrustify
 
-  "${MV}" "${UNC_EXEC}" ../../.. || abort "Failed to move ${UNC_EXEC} to parent directory with code $?"
+  "${MV}" "${UNC_EXEC}" ../.. || abort "Failed to move ${UNC_EXEC} to parent directory with code $?"
 
-  cd ../../..
+  cd ../..
   "${RM}" -rf "${UNCRUSTIFY_REPO}" || abort "Failed to cleanup Uncrustify repo dir with code $?"
 }
 
