@@ -22,6 +22,12 @@ unamer() {
   fi
 }
 
+if [ "${PROJECT_NAME}" = "" ]; then
+  abort "Missing env variable PROJECT_NAME"
+fi
+
+export UNC_CONFIG_FILE="unc-${PROJECT_NAME}.cfg"
+
 if [ "$(which cmake)" = "" ]; then
   abort "Missing cmake"
 fi
@@ -70,21 +76,28 @@ download_bin() {
   rm -rf Uncrustify-analysis || abort "Failed to cleanup Uncrustify-analysis dir with code $?"
 }
 
+download_conf() {
+  curl -LfsS "https://raw.githubusercontent.com/acidanthera/ocbuild/unc-build/uncrustify/configs/${UNC_CONFIG_FILE}" || abort "Failed to download ${CONFIG_NAME}"
+}
+
 UNCRUSTIFY_LINK=""
 case "$(unamer)" in
   Darwin )
     UNCRUSTIFY_LINK="https://projectmu@dev.azure.com/projectmu/Uncrustify/_git/Uncrustify"
     build_bin "${UNCRUSTIFY_LINK}"
+    download_conf
   ;;
 
   Linux )
     UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12516/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
     download_bin "${UNCRUSTIFY_LINK}"
+    download_conf
   ;;
 
   Windows )
     UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12518/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
     download_bin "${UNCRUSTIFY_LINK}"
+    download_conf
   ;;
 
   * )
