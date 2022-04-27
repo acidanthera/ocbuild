@@ -77,7 +77,7 @@ download_bin() {
 }
 
 download_conf() {
-  curl -LfsS "https://raw.githubusercontent.com/acidanthera/ocbuild/unc-build/uncrustify/configs/${UNC_CONFIG_FILE}" || abort "Failed to download ${CONFIG_NAME}"
+  curl -LfsS "https://raw.githubusercontent.com/acidanthera/ocbuild/unc-build/uncrustify/configs/${UNC_CONFIG_FILE}" -o "${UNC_CONFIG_FILE}" || abort "Failed to download ${CONFIG_NAME}"
 }
 
 UNCRUSTIFY_LINK=""
