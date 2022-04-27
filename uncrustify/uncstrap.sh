@@ -45,7 +45,7 @@ build_bin() {
   mv "${UNC_EXEC}" ../.. || abort "Failed to move ${UNC_EXEC} to parent directory with code $?"
 
   cd ../..
-  "${RM}" -rf "${UNCRUSTIFY_REPO}" || abort "Failed to cleanup Uncrustify repo dir with code $?"
+  rm -rf "${UNCRUSTIFY_REPO}" || abort "Failed to cleanup Uncrustify repo dir with code $?"
 }
 
 download_bin() {
@@ -58,7 +58,7 @@ download_bin() {
   echo "Downloading Uncrustify..."
   curl -LfsS "${link}" -o "${UNCRUSTIFY_ARCHIVE}" || abort "Failed to download Uncrustify with code $?"
 
-  "${UNZIP}" -q "${UNCRUSTIFY_ARCHIVE}" || abort "Failed to decompress Uncrustify with code $?"
+  unzip -q "${UNCRUSTIFY_ARCHIVE}" || abort "Failed to decompress Uncrustify with code $?"
 
   cd Executable || abort "Failed to cd to Uncrustify Executable with code $?"
 
