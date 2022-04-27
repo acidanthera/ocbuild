@@ -22,33 +22,6 @@ unamer() {
   fi
 }
 
-# Avoid conflicts with PATH overrides.
-CAT="/bin/cat"
-CHMOD="/bin/chmod"
-FIND="/usr/bin/find"
-MKDIR="/bin/mkdir"
-MV="/bin/mv"
-RM="/bin/rm"
-TAR="/usr/bin/tar"
-UNZIP="/usr/bin/unzip"
-
-TOOLS=(
-  "${CAT}"
-  "${CHMOD}"
-  "${FIND}"
-  "${MKDIR}"
-  "${MV}"
-  "${RM}"
-  "${TAR}"
-  "${UNZIP}"
-)
-
-for tool in "${TOOLS[@]}"; do
-  if [ ! -x "${tool}" ]; then
-    abort "Missing ${tool}"
-  fi
-done
-
 if [ "$(which cmake)" = "" ]; then
   abort "Missing cmake"
 fi
@@ -66,7 +39,7 @@ build_bin() {
 
   export UNC_EXEC=./uncrustify
 
-  "${MV}" "${UNC_EXEC}" ../.. || abort "Failed to move ${UNC_EXEC} to parent directory with code $?"
+  mv "${UNC_EXEC}" ../.. || abort "Failed to move ${UNC_EXEC} to parent directory with code $?"
 
   cd ../..
   "${RM}" -rf "${UNCRUSTIFY_REPO}" || abort "Failed to cleanup Uncrustify repo dir with code $?"
@@ -76,7 +49,7 @@ download_bin() {
   local link="$1"
   local UNCRUSTIFY_ARCHIVE="uncrustify.zip"
 
-  "${MKDIR}" -p Uncrustify-analysis
+  mkdir -p Uncrustify-analysis
   cd Uncrustify-analysis || abort "Failed to cd to Uncrustify-analysis directory with code $?"
 
   echo "Downloading Uncrustify..."
@@ -91,12 +64,12 @@ download_bin() {
     export UNC_EXEC=./uncrustify.exe
   fi
 
-  "${CHMOD}" a+x "${UNC_EXEC}" || abort "Failed to chmod ${UNC_EXEC} with code $?"
+  chmod a+x "${UNC_EXEC}" || abort "Failed to chmod ${UNC_EXEC} with code $?"
 
-  "${MV}" "${UNC_EXEC}" ../.. || abort "Failed to move ${UNC_EXEC} to parent directory with code $?"
+  mv "${UNC_EXEC}" ../.. || abort "Failed to move ${UNC_EXEC} to parent directory with code $?"
 
   cd ../..
-  "${RM}" -rf Uncrustify-analysis || abort "Failed to cleanup Uncrustify-analysis dir with code $?"
+  rm -rf Uncrustify-analysis || abort "Failed to cleanup Uncrustify-analysis dir with code $?"
 }
 
 UNCRUSTIFY_LINK=""
