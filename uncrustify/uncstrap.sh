@@ -80,23 +80,25 @@ download_conf() {
   curl -LfsS "https://raw.githubusercontent.com/acidanthera/ocbuild/unc-build/uncrustify/configs/${UNC_CONFIG_FILE}" -o "${UNC_CONFIG_FILE}" || abort "Failed to download ${CONFIG_NAME}"
 }
 
-UNCRUSTIFY_LINK=""
+UNCRUSTIFY_LINK="https://projectmu@dev.azure.com/projectmu/Uncrustify/_git/Uncrustify"
 case "$(unamer)" in
   Darwin )
-    UNCRUSTIFY_LINK="https://projectmu@dev.azure.com/projectmu/Uncrustify/_git/Uncrustify"
+    # UNCRUSTIFY_LINK="https://projectmu@dev.azure.com/projectmu/Uncrustify/_git/Uncrustify"
     build_bin "${UNCRUSTIFY_LINK}"
     download_conf
   ;;
 
   Linux )
-    UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12516/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
-    download_bin "${UNCRUSTIFY_LINK}"
+    # UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12516/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
+    # download_bin "${UNCRUSTIFY_LINK}"
+    build_bin "${UNCRUSTIFY_LINK}"
     download_conf
   ;;
 
   Windows )
-    UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12518/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
-    download_bin "${UNCRUSTIFY_LINK}"
+    # UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12518/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
+    # download_bin "${UNCRUSTIFY_LINK}"
+    build_bin "${UNCRUSTIFY_LINK}"
     download_conf
   ;;
 
