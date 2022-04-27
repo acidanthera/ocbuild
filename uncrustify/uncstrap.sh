@@ -26,6 +26,11 @@ if [ "$(which cmake)" = "" ]; then
   abort "Missing cmake"
 fi
 
+export UNC_EXEC=./uncrustify
+if [ "$(unamer)" = "Windows" ]; then
+  export UNC_EXEC=./uncrustify.exe
+fi
+
 build_bin() {
   local link="$1"
   UNCRUSTIFY_REPO=Uncrustify-repo
@@ -36,8 +41,6 @@ build_bin() {
   cd build || abort "Failed to cd to temporary build directory"
   cmake .. || abort "Failed to generate makefile with cmake"
   cmake --build . || abort "Failed to build Uncrustify"
-
-  export UNC_EXEC=./uncrustify
 
   mv "${UNC_EXEC}" ../.. || abort "Failed to move ${UNC_EXEC} to parent directory with code $?"
 
@@ -58,11 +61,6 @@ download_bin() {
   "${UNZIP}" -q "${UNCRUSTIFY_ARCHIVE}" || abort "Failed to decompress Uncrustify with code $?"
 
   cd Executable || abort "Failed to cd to Uncrustify Executable with code $?"
-
-  export UNC_EXEC=./uncrustify
-  if [ "$(unamer)" = "Windows" ]; then
-    export UNC_EXEC=./uncrustify.exe
-  fi
 
   chmod a+x "${UNC_EXEC}" || abort "Failed to chmod ${UNC_EXEC} with code $?"
 
