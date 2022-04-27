@@ -46,34 +46,12 @@ build_bin() {
   mkdir build || abort "Failed to make temporary build directory"
   cd build || abort "Failed to cd to temporary build directory"
   cmake .. || abort "Failed to generate makefile with cmake"
-  cmake --build . || abort "Failed to build Uncrustify"
+  cmake --build . --config Release || abort "Failed to build Uncrustify"
 
   mv "${UNC_EXEC}" ../.. || abort "Failed to move ${UNC_EXEC} to parent directory with code $?"
 
   cd ../..
   rm -rf "${UNCRUSTIFY_REPO}" || abort "Failed to cleanup Uncrustify repo dir with code $?"
-}
-
-download_bin() {
-  local link="$1"
-  local UNCRUSTIFY_ARCHIVE="uncrustify.zip"
-
-  mkdir -p Uncrustify-analysis
-  cd Uncrustify-analysis || abort "Failed to cd to Uncrustify-analysis directory with code $?"
-
-  echo "Downloading Uncrustify..."
-  curl -LfsS "${link}" -o "${UNCRUSTIFY_ARCHIVE}" || abort "Failed to download Uncrustify with code $?"
-
-  unzip -q "${UNCRUSTIFY_ARCHIVE}" || abort "Failed to decompress Uncrustify with code $?"
-
-  cd Executable || abort "Failed to cd to Uncrustify Executable with code $?"
-
-  chmod a+x "${UNC_EXEC}" || abort "Failed to chmod ${UNC_EXEC} with code $?"
-
-  mv "${UNC_EXEC}" ../.. || abort "Failed to move ${UNC_EXEC} to parent directory with code $?"
-
-  cd ../..
-  rm -rf Uncrustify-analysis || abort "Failed to cleanup Uncrustify-analysis dir with code $?"
 }
 
 download_conf() {
@@ -82,22 +60,7 @@ download_conf() {
 
 UNCRUSTIFY_LINK="https://projectmu@dev.azure.com/projectmu/Uncrustify/_git/Uncrustify"
 case "$(unamer)" in
-  Darwin )
-    # UNCRUSTIFY_LINK="https://projectmu@dev.azure.com/projectmu/Uncrustify/_git/Uncrustify"
-    build_bin "${UNCRUSTIFY_LINK}"
-    download_conf
-  ;;
-
-  Linux )
-    # UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12516/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
-    # download_bin "${UNCRUSTIFY_LINK}"
-    build_bin "${UNCRUSTIFY_LINK}"
-    download_conf
-  ;;
-
-  Windows )
-    # UNCRUSTIFY_LINK="https://dev.azure.com/projectmu/271ca9de-dc2a-4567-ad0f-bde903c9ce7e/_apis/build/builds/12518/artifacts?artifactName=Executable&api-version=7.0&%24format=zip"
-    # download_bin "${UNCRUSTIFY_LINK}"
+  Darwin | Linux | Windows )
     build_bin "${UNCRUSTIFY_LINK}"
     download_conf
   ;;
