@@ -25,7 +25,6 @@ unamer() {
 # Avoid conflicts with PATH overrides.
 CAT="/bin/cat"
 CHMOD="/bin/chmod"
-CURL="/usr/bin/curl"
 FIND="/usr/bin/find"
 MKDIR="/bin/mkdir"
 MV="/bin/mv"
@@ -36,7 +35,6 @@ UNZIP="/usr/bin/unzip"
 TOOLS=(
   "${CAT}"
   "${CHMOD}"
-  "${CURL}"
   "${FIND}"
   "${MKDIR}"
   "${MV}"
@@ -82,7 +80,7 @@ download_bin() {
   cd Uncrustify-analysis || abort "Failed to cd to Uncrustify-analysis directory with code $?"
 
   echo "Downloading Uncrustify..."
-  "${CURL}" -LfsS "${link}" -o "${UNCRUSTIFY_ARCHIVE}" || abort "Failed to download Uncrustify with code $?"
+  curl -LfsS "${link}" -o "${UNCRUSTIFY_ARCHIVE}" || abort "Failed to download Uncrustify with code $?"
 
   "${UNZIP}" -q "${UNCRUSTIFY_ARCHIVE}" || abort "Failed to decompress Uncrustify with code $?"
 
