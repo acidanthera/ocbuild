@@ -38,6 +38,8 @@ if [ "$(unamer)" = "Windows" ]; then
 fi
 
 build_bin() {
+  local scheme="Release"
+
   local link="$1"
   UNCRUSTIFY_REPO=Uncrustify-repo
 
@@ -46,9 +48,13 @@ build_bin() {
   mkdir build || abort "Failed to make temporary build directory"
   cd build || abort "Failed to cd to temporary build directory"
   cmake .. || abort "Failed to generate makefile with cmake"
-  cmake --build . --config Release || abort "Failed to build Uncrustify"
+  cmake --build . --config "${scheme}" || abort "Failed to build Uncrustify"
 
-  mv "${UNC_EXEC}" ../.. || abort "Failed to move ${UNC_EXEC} to parent directory with code $?"
+  local prefix=./
+  if [ "$(unamer)" = "Windows" ]; then
+    prefix=./"${scheme}/"
+  fi
+  mv "${prefix}${UNC_EXEC}" ../.. || abort "Failed to move ${UNC_EXEC} to parent directory with code $?"
 
   cd ../..
   rm -rf "${UNCRUSTIFY_REPO}" || abort "Failed to cleanup Uncrustify repo dir with code $?"
