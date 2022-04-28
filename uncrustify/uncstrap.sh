@@ -73,7 +73,10 @@ fi
 build_bin() {
   local link="$1"
 
+  rm -rf "${UNCRUSTIFY_REPO}" || abort "Failed to cleanup legacy Uncrustify directory"
+
   git clone "${link}" --depth=1 "${UNCRUSTIFY_REPO}" || abort "Failed to clone ${UNCRUSTIFY_REPO}"
+  
   cd "${UNCRUSTIFY_REPO}" || abort "Failed to cd to ${UNCRUSTIFY_REPO}"
   mkdir build || abort "Failed to make temporary build directory"
   cd build || abort "Failed to cd to temporary build directory"
