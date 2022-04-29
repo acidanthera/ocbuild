@@ -88,5 +88,24 @@ download_conf() {
   curl -LfsS "https://raw.githubusercontent.com/acidanthera/ocbuild/unc-build/uncrustify/configs/${UNC_CONFIG}" -o "${UNC_CONFIG}" || abort "Failed to download ${CONFIG_NAME}"
 }
 
+run_uncrustify() {
+  rm -f "${UNC_DIFF}" || abort "Failed to cleanup legacy ${UNC_DIFF}"
+  "${UNC_EXEC}" -c "${UNC_CONFIG}" -F "${FILE_LIST}" --replace --no-backup --if-changed || abort "Failed to run Uncrustify"
+
+  # only diff the selected .c/.h files
+  while read -r line; do
+    git diff "${line}" >> "${UNC_DIFF}" || abort "Failed to git diff ${line}"
+  done < "${FILE_LIST}"
+  if [ "$(cat "${UNC_DIFF}")" != "" ]; then
+    # show the diff
+    cat "${UNC_DIFF}"
+    abort "Uncrustify detects codestyle problems! Please fix"
+  fi
+
+  rm -f "${FILE_LIST}" || abort "Failed to cleanup ${FILE_LIST}"
+  rm -f "${UNC_EXEC}" || abort "Failed to cleanup ${UNC_EXEC}"
+  rm -f "${UNC_CONFIG}" || abort "Failed to cleanup ${UNC_CONFIG}"
+}
+
 build_bin "${UNCRUSTIFY_LINK}"
 download_conf
