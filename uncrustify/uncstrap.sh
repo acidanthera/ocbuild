@@ -34,30 +34,20 @@ if [ "${UNSUPPORTED_DIST}" != 1 ]; then
   esac
 fi
 
+case "${PROJECT_TYPE}" in
+  UEFI )
+  ;;
+
+  * )
+    abort "Unsupported project type ${PROJECT_TYPE}"
+  ;;
+esac
+
 if [ "$(which cmake)" = "" ]; then
   abort "Missing cmake"
 fi
 
-if [ "${PROJECT_NAME}" = "" ]; then
-  abort "Missing env variable PROJECT_NAME"
-fi
-
-SUPPORTED_PROJS=(
-  "OpenCorePkg"
-  )
-IS_SUPPORTED=0
-
-for s in "${SUPPORTED_PROJS[@]}"; do
-  if [ "${PROJECT_NAME}" = "${s}" ]; then
-    IS_SUPPORTED=1
-    break
-  fi
-done
-if [ "${IS_SUPPORTED}" = 0 ]; then
-  abort "Unsupported project ${PROJECT_NAME}"
-fi
-
-export UNC_CONFIG="unc-${PROJECT_NAME}.cfg"
+export UNC_CONFIG="unc-${PROJECT_TYPE}.cfg"
 export UNCRUSTIFY_REPO="Uncrustify-repo"
 export FILE_LIST="filelist.txt"
 export UNC_DIFF="uncrustify.diff"
