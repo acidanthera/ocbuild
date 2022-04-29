@@ -100,6 +100,8 @@ run_uncrustify() {
     # show the diff
     cat "${UNC_DIFF}"
     abort "Uncrustify detects codestyle problems! Please fix"
+  else
+    rm -f "${UNC_DIFF}" || abort "Failed to remove empty ${UNC_DIFF}"
   fi
 
   rm -f "${FILE_LIST}" || abort "Failed to cleanup ${FILE_LIST}"
