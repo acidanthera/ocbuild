@@ -138,12 +138,12 @@ def build_uncrustify(url):
   except OSError:
     abort('Failed to cd to temporary build directory')
 
-  cmake_args = 'cmake ' + '..'
-  ret = subprocess.check_call(cmake_args, shell=True)
+  cmake_args = [ 'cmake', '..' ]
+  ret = subprocess.check_call(cmake_args)
   if ret != 0:
     abort('Failed to generate makefile with cmake')
-  cmake_args = 'cmake --build . --config ' + BUILD_SCHEME
-  ret = subprocess.check_call(cmake_args, shell=True)
+  cmake_args = [ 'cmake', '--build', '.', '--config', BUILD_SCHEME ]
+  ret = subprocess.check_call(cmake_args)
   if ret != 0:
     abort('Failed to build Uncrustify ' + BUILD_SCHEME)
 
@@ -175,8 +175,8 @@ def run_uncrustify():
     except OSError:
       abort('Failed to cleanup legacy' + UNC_DIFF)
 
-  unc_args = UNC_EXEC + ' -c ' + UNC_CONF + ' -F ' + FILE_LIST + ' --replace --no-backup --if-changed'
-  ret = subprocess.check_call(unc_args, shell=True)
+  unc_args = [ UNC_EXEC, '-c', UNC_CONF, '-F', FILE_LIST, '--replace', '--no-backup', '--if-changed' ]
+  ret = subprocess.check_call(unc_args)
   if ret != 0:
     abort('Failed to run Uncrustify')
 
