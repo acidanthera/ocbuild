@@ -200,6 +200,7 @@ def run_uncrustify():
         diff_txt.write(diff_output + '\n')
       except IOError:
         abort('Failed to generate git diff ' + l)
+  diff_txt.close()
 
   file_cleanup = [ FILE_LIST, UNC_EXEC, UNC_CONF ]
   for fc in file_cleanup:
