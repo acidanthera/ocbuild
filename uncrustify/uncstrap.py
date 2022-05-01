@@ -78,7 +78,7 @@ def dump_file_list(yml_file):
   for f in file_list:
     skip = False
     for e in exclude_list:
-      if e in f:
+      if os.path.normpath(e) in os.path.normpath(f):
         skip = True
 
     if skip:
