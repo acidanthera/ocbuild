@@ -134,7 +134,7 @@ def build_uncrustify(url):
 
   os.chdir('../..')
   try:
-    shutil.rmtree(UNC_REPO)
+    shutil.rmtree(UNC_REPO, onerror=onerror)
   except OSError as e:
     print(e)
     abort('Failed to cleanup ' + UNC_REPO)
