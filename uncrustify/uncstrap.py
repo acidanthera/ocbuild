@@ -140,8 +140,8 @@ def build_uncrustify(url):
   except OSError:
     abort('Failed to cd to temporary build directory')
 
-  print ('cmake arg: ' + '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY={0}'.format(proj_root))
-  cmake_args = [ 'cmake', '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY={0}'.format(proj_root), '..' ]
+  print ('cmake arg: ' + '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=\'{0}\''.format(proj_root))
+  cmake_args = [ 'cmake', '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=\'{0}\''.format(proj_root), '..' ]
   ret = subprocess.check_call(cmake_args)
   if ret != 0:
     abort('Failed to generate makefile with cmake')
