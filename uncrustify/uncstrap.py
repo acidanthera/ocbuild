@@ -37,8 +37,6 @@ except OSError:
 
 UNSUPPORTED_DIST = os.getenv('UNSUPPORTED_DIST', default=0)
 DIST = platform.uname().system
-# FIXME: Drop this print
-print('Current dist: ' + DIST)
 if UNSUPPORTED_DIST != 1:
   if DIST != 'Darwin' and DIST != 'Linux' and DIST != 'Windows':
     abort('Unsupported OS distribution ' + DIST)
@@ -137,7 +135,8 @@ def build_uncrustify(url):
   os.chdir('../..')
   try:
     shutil.rmtree(UNC_REPO)
-  except OSError:
+  except OSError as e:
+    print(e)
     abort('Failed to cleanup ' + UNC_REPO)
 
 def download_uncrustify_conf():
