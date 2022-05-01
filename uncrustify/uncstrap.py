@@ -121,7 +121,6 @@ def build_uncrustify(url):
       abort('Failed to cleanup legacy ' + UNC_REPO)
 
   proj_root = os.getcwd()
-  print('proj_root: ' + proj_root)
 
   try:
     Repo.clone_from(url, UNC_REPO)
@@ -140,8 +139,7 @@ def build_uncrustify(url):
   except OSError:
     abort('Failed to cd to temporary build directory')
 
-  print ('cmake arg: ' + '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=\'{0}\''.format(proj_root))
-  cmake_args = [ 'cmake', '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=\'{0}\''.format(proj_root), '..' ]
+  cmake_args = [ 'cmake', '..' ]
   ret = subprocess.check_call(cmake_args)
   if ret != 0:
     abort('Failed to generate makefile with cmake')
@@ -150,7 +148,22 @@ def build_uncrustify(url):
   if ret != 0:
     abort('Failed to build Uncrustify ' + BUILD_SCHEME)
 
+  for root, dirs, files in os.walk(os.getcwd()):
+    for name in files:
+      if name == UNC_EXEC:
+        exe = os.path.abspath(os.path.join(root, name))
+
+  try:
+    shutil.move(exe, proj_root)
+  except FileNotFoundError:
+    abort('Failed to locate uncrustify binary')
+
+  # update UNC_EXEC path
+  global UNC_EXEC
+  UNC_EXEC = proj_root + '/' + UNC_EXEC
+
   os.chdir(proj_root)
+
   try:
     shutil.rmtree(UNC_REPO, onerror=onerror)
   except OSError as e:
@@ -167,9 +180,9 @@ def run_uncrustify():
     try:
       os.remove(UNC_DIFF)
     except OSError:
-      abort('Failed to cleanup legacy' + UNC_DIFF)
+      abort('Failed to cleanup legacy ' + UNC_DIFF)
 
-  unc_args = [ os.getcwd() + '/' + UNC_EXEC, '-c', UNC_CONF, '-F', FILE_LIST, '--replace', '--no-backup', '--if-changed' ]
+  unc_args = [ UNC_EXEC, '-c', UNC_CONF, '-F', FILE_LIST, '--replace', '--no-backup', '--if-changed' ]
   ret = subprocess.check_call(unc_args)
   if ret != 0:
     abort('Failed to run Uncrustify')
