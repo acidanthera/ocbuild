@@ -88,6 +88,7 @@ def dump_file_list(yml_file):
       list_txt.write(f + '\n')
     except IOError:
       abort('Failed to dump file list')
+  list_txt.close()
 
 """
 shutil.rmtree error handling.
@@ -187,6 +188,7 @@ def run_uncrustify():
 
   list_buffer = open(FILE_LIST, 'r')
   lines       = list_buffer.read().splitlines()
+  list_buffer.close()
   repo        = Repo(os.getcwd())
   diff_txt    = open(UNC_DIFF, 'w')
   for l in lines:
