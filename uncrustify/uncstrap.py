@@ -148,10 +148,10 @@ def build_uncrustify(url):
     abort('Failed to build Uncrustify ' + BUILD_SCHEME)
 
   global UNC_EXEC
-  for root, dirs, files in os.walk(os.getcwd()):
-    for name in files:
-      if name == UNC_EXEC:
-        exe = os.path.abspath(os.path.join(root, name))
+  try:
+    exe = next((os.path.abspath(os.path.join(root, name)) for root, dirs, files in os.walk(os.getcwd()) for name in files if name == UNC_EXEC), None)
+  except StopIteration:
+    abort('Failed to find uncrustify binary')
 
   try:
     shutil.move(exe, proj_root)
