@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from glob import glob
 import os
 import platform
 import shutil
@@ -57,7 +56,6 @@ UNC_DIFF='uncrustify.diff'
 BUILD_SCHEME='Release'
 
 UNC_EXEC = 'uncrustify'
-# FIXME: Check Windows
 if DIST == 'Windows':
   UNC_EXEC += '.exe'
 
@@ -73,7 +71,7 @@ def dump_file_list(yml_file):
       abort('Failed to read Uncrustify.yml')
 
   # Match .c and .h files
-  file_list = [y for x in os.walk(os.getcwd()) for y in glob(os.path.join(x[0], '*.[c|h]'))]
+  file_list = [os.path.join(path, name) for path, subdirs, files in os.walk(os.getcwd()) for name in files if name.lower().endswith((".c", ".h"))]
   list_txt  = open(FILE_LIST, 'w')
   for f in file_list:
     skip = False
