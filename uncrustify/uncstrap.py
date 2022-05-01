@@ -133,10 +133,10 @@ def build_uncrustify(url):
     abort('Failed to move ' + UNC_EXEC + ' to parent directory')
 
   os.chdir('../..')
-  try:
-    shutil.rmtree(UNC_REPO)
-  except OSError as e:
-    print(e)
+  # FIXME: buggy workaround
+  rm_args = 'rm -rf ' + UNC_REPO
+  ret = subprocess.check_call(rm_args, shell=True)
+  if ret != 0:
     abort('Failed to cleanup ' + UNC_REPO)
 
 def download_uncrustify_conf():
