@@ -120,11 +120,12 @@ def build_uncrustify(url):
     except OSError:
       abort('Failed to cleanup legacy ' + UNC_REPO)
 
+  proj_root = os.getcwd()
+
   try:
     Repo.clone_from(url, UNC_REPO)
   except git.exc.GitCommandError:
     abort('Failed to clone ' + UNC_REPO)
-
   try:
     os.chdir(UNC_REPO)
   except OSError:
@@ -138,7 +139,7 @@ def build_uncrustify(url):
   except OSError:
     abort('Failed to cd to temporary build directory')
 
-  cmake_args = [ 'cmake', '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=../..', '..' ]
+  cmake_args = [ 'cmake', '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY={0}'.format(proj_root), '..' ]
   ret = subprocess.check_call(cmake_args)
   if ret != 0:
     abort('Failed to generate makefile with cmake')
@@ -147,7 +148,7 @@ def build_uncrustify(url):
   if ret != 0:
     abort('Failed to build Uncrustify ' + BUILD_SCHEME)
 
-  os.chdir('../..')
+  os.chdir(proj_root)
   try:
     shutil.rmtree(UNC_REPO, onerror=onerror)
   except OSError as e:
