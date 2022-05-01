@@ -121,6 +121,7 @@ def build_uncrustify(url):
       abort('Failed to cleanup legacy ' + UNC_REPO)
 
   proj_root = os.getcwd()
+  print('proj_root: ' + proj_root)
 
   try:
     Repo.clone_from(url, UNC_REPO)
@@ -139,6 +140,7 @@ def build_uncrustify(url):
   except OSError:
     abort('Failed to cd to temporary build directory')
 
+  print ('cmake arg: ' + '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY={0}'.format(proj_root))
   cmake_args = [ 'cmake', '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY={0}'.format(proj_root), '..' ]
   ret = subprocess.check_call(cmake_args)
   if ret != 0:
