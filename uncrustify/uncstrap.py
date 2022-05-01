@@ -56,7 +56,7 @@ FILE_LIST='filelist.txt'
 UNC_DIFF='uncrustify.diff'
 BUILD_SCHEME='Release'
 
-UNC_EXEC = './uncrustify'
+UNC_EXEC = 'uncrustify'
 # FIXME: Check Windows
 if DIST == 'Windows':
   UNC_EXEC += '.exe'
@@ -166,7 +166,7 @@ def run_uncrustify():
     except OSError:
       abort('Failed to cleanup legacy' + UNC_DIFF)
 
-  unc_args = [ UNC_EXEC, '-c', UNC_CONF, '-F', FILE_LIST, '--replace', '--no-backup', '--if-changed' ]
+  unc_args = [ os.getcwd() + '/' + UNC_EXEC, '-c', UNC_CONF, '-F', FILE_LIST, '--replace', '--no-backup', '--if-changed' ]
   ret = subprocess.check_call(unc_args)
   if ret != 0:
     abort('Failed to run Uncrustify')
