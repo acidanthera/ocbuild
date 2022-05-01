@@ -183,9 +183,7 @@ def run_uncrustify():
       abort('Failed to cleanup legacy ' + UNC_DIFF)
 
   unc_args = [ UNC_EXEC, '-c', UNC_CONF, '-F', FILE_LIST, '--replace', '--no-backup', '--if-changed' ]
-  ret = subprocess.check_call(unc_args)
-  if ret != 0:
-    abort('Failed to run Uncrustify')
+  subprocess.check_call(unc_args)
 
   list_buffer = open(FILE_LIST, 'r')
   lines       = list_buffer.read().splitlines()
@@ -206,8 +204,9 @@ def run_uncrustify():
     if os.path.isfile(fc):
       try:
         os.remove(fc)
-      except OSError:
-        abort('Failed to cleanup legacy' + fc)
+      except OSError as e:
+        print(e)
+        abort('Failed to cleanup legacy ' + fc)
 
   if os.stat(UNC_DIFF).st_size != 0:
     abort('Uncrustify detects codestyle problems! Please fix')
