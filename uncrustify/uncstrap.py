@@ -89,10 +89,34 @@ def dump_file_list(yml_file):
     except IOError:
       abort('Failed to dump file list')
 
+"""
+shutil.rmtree error handling.
+
+From: https://stackoverflow.com/a/2656405
+"""
+def onerror(func, path, exc_info):
+  """
+  Error handler for ``shutil.rmtree``.
+
+  If the error is due to an access error (read only file)
+  it attempts to add write permission and then retries.
+
+  If the error is for another reason it re-raises the error.
+  
+  Usage : ``shutil.rmtree(path, onerror=onerror)``
+  """
+  import stat
+  # Is the error an access error?
+  if not os.access(path, os.W_OK):
+    os.chmod(path, stat.S_IWUSR)
+    func(path)
+  else:
+    raise
+
 def build_uncrustify(url):
   if os.path.isdir(UNC_REPO):
     try:
-      shutil.rmtree(UNC_REPO)
+      shutil.rmtree(UNC_REPO, onerror=onerror)
     except OSError:
       abort('Failed to cleanup legacy ' + UNC_REPO)
 
