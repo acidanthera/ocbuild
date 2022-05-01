@@ -56,10 +56,10 @@ FILE_LIST='filelist.txt'
 UNC_DIFF='uncrustify.diff'
 BUILD_SCHEME='Release'
 
-UNC_EXEC='./uncrustify'
+UNC_EXEC = './uncrustify'
 # FIXME: Check Windows
 if DIST == 'Windows':
-  UNC_EXEC='./uncrustify.exe'
+  UNC_EXEC += '.exe'
 
 def dump_file_list(yml_file):
   with open(yml_file, 'r') as buffer:
@@ -138,7 +138,7 @@ def build_uncrustify(url):
   except OSError:
     abort('Failed to cd to temporary build directory')
 
-  cmake_args = [ 'cmake', '..' ]
+  cmake_args = [ 'cmake', '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=../..', '..' ]
   ret = subprocess.check_call(cmake_args)
   if ret != 0:
     abort('Failed to generate makefile with cmake')
@@ -146,15 +146,6 @@ def build_uncrustify(url):
   ret = subprocess.check_call(cmake_args)
   if ret != 0:
     abort('Failed to build Uncrustify ' + BUILD_SCHEME)
-
-  # FIXME: Check Windows
-  prefix = './'
-  if DIST == 'Windows':
-    prefix = './' + BUILD_SCHEME + '/'
-  try:
-    shutil.move(prefix + UNC_EXEC, '../..')
-  except OSError:
-    abort('Failed to move ' + UNC_EXEC + ' to parent directory')
 
   os.chdir('../..')
   try:
