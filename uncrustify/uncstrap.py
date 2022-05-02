@@ -92,11 +92,10 @@ def dump_file_list(yml_file):
     list_txt.close()
 
 
-"""
-shutil.rmtree error handling.
-
-From: https://stackoverflow.com/a/2656405
-"""
+#
+# shutil.rmtree error handling.
+# From: https://stackoverflow.com/a/2656405
+#
 def onerror(func, path, exc_info):
     """
     Error handler for ``shutil.rmtree``.
@@ -142,11 +141,11 @@ def build_uncrustify(url):
     except OSError:
         abort('Failed to cd to temporary build directory')
 
-    cmake_args = [ 'cmake', '..' ]
+    cmake_args = ['cmake', '..']
     ret = subprocess.check_call(cmake_args)
     if ret != 0:
         abort('Failed to generate makefile with cmake')
-    cmake_args = [ 'cmake', '--build', '.', '--config', BUILD_SCHEME ]
+    cmake_args = ['cmake', '--build', '.', '--config', BUILD_SCHEME]
     ret = subprocess.check_call(cmake_args)
     if ret != 0:
         abort('Failed to build Uncrustify ' + BUILD_SCHEME)
@@ -173,10 +172,12 @@ def build_uncrustify(url):
         print(exc)
         abort('Failed to cleanup ' + UNC_REPO)
 
+
 def download_uncrustify_conf():
     response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/unc-build/uncrustify/configs/' + UNC_CONF)
     with open(UNC_CONF, 'wb') as conf:
         conf.write(response.content)
+
 
 def run_uncrustify():
     if os.path.isfile(UNC_DIFF):
@@ -185,33 +186,33 @@ def run_uncrustify():
         except OSError:
             abort('Failed to cleanup legacy ' + UNC_DIFF)
 
-    unc_args = [ UNC_EXEC, '-c', UNC_CONF, '-F', FILE_LIST, '--replace', '--no-backup', '--if-changed' ]
+    unc_args = [UNC_EXEC, '-c', UNC_CONF, '-F', FILE_LIST, '--replace', '--no-backup', '--if-changed']
     subprocess.check_call(unc_args)
 
     list_buffer = open(FILE_LIST, 'r')
-    lines       = list_buffer.read().splitlines()
+    lines = list_buffer.read().splitlines()
     list_buffer.close()
-    repo        = Repo(os.getcwd())
-    diff_txt    = open(UNC_DIFF, 'w')
-    for l in lines:
-        diff_output = repo.git.diff(l)
+    repo = Repo(os.getcwd())
+    diff_txt = open(UNC_DIFF, 'w')
+    for line in lines:
+        diff_output = repo.git.diff(line)
         if diff_output != '':
             print(diff_output + '\n')
 
             try:
                 diff_txt.write(diff_output + '\n')
             except IOError:
-                abort('Failed to generate git diff ' + l)
+                abort('Failed to generate git diff ' + line)
     diff_txt.close()
 
-    file_cleanup = [ FILE_LIST, UNC_EXEC, UNC_CONF ]
-    for fc in file_cleanup:
-        if os.path.isfile(fc):
+    file_cleanup = [FILE_LIST, UNC_EXEC, UNC_CONF]
+    for file in file_cleanup:
+        if os.path.isfile(file):
             try:
-                os.remove(fc)
+                os.remove(file)
             except OSError as exc:
                 print(exc)
-                abort('Failed to cleanup legacy ' + fc)
+                abort('Failed to cleanup legacy ' + file)
 
     if os.stat(UNC_DIFF).st_size != 0:
         abort('Uncrustify detects codestyle problems! Please fix')
@@ -222,11 +223,13 @@ def run_uncrustify():
         except OSError:
             abort('Failed to remove empty ' + UNC_DIFF)
 
+
 def main():
     dump_file_list(sys.argv[1])
     build_uncrustify(UNC_LINK)
     download_uncrustify_conf()
     run_uncrustify()
+
 
 if __name__ == '__main__':
     main()
