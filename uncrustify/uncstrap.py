@@ -74,23 +74,26 @@ def dump_file_list(yml_file):
         except yaml.YAMLError:
             abort('Failed to read Uncrustify.yml')
 
+        buffer.close()
+
     # Match .c and .h files
     file_list = [os.path.join(path, name) for path, subdirs, files in os.walk(os.getcwd()) for name in files if name.lower().endswith((".c", ".h"))]
-    list_txt = open(FILE_LIST, 'w')
-    for file in file_list:
-        skip = False
-        for excl in exclude_list:
-            if os.path.normpath(excl) in os.path.normpath(file):
-                skip = True
+    with open(FILE_LIST, 'w') as list_txt:
+        for file in file_list:
+            skip = False
+            for excl in exclude_list:
+                if os.path.normpath(excl) in os.path.normpath(file):
+                    skip = True
 
-        if skip:
-            continue
+            if skip:
+                continue
 
-        try:
-            list_txt.write(file + '\n')
-        except IOError:
-            abort('Failed to dump file list')
-    list_txt.close()
+            try:
+                list_txt.write(file + '\n')
+            except IOError:
+                abort('Failed to dump file list')
+
+        list_txt.close()
 
 
 #
@@ -188,21 +191,23 @@ def run_uncrustify():
     unc_args = [UNC_EXEC, '-c', UNC_CONF, '-F', FILE_LIST, '--replace', '--no-backup', '--if-changed']
     subprocess.check_call(unc_args)
 
-    list_buffer = open(FILE_LIST, 'r')
-    lines = list_buffer.read().splitlines()
-    list_buffer.close()
-    repo = Repo(os.getcwd())
-    diff_txt = open(UNC_DIFF, 'w')
-    for line in lines:
-        diff_output = repo.git.diff(line)
-        if diff_output != '':
-            print(diff_output + '\n')
+    with open(FILE_LIST, 'r') as list_buffer:
+        lines = list_buffer.read().splitlines()
+        list_buffer.close()
 
-            try:
-                diff_txt.write(diff_output + '\n')
-            except IOError:
-                abort('Failed to generate git diff ' + line)
-    diff_txt.close()
+    repo = Repo(os.getcwd())
+    with open(UNC_DIFF, 'w') as diff_txt:
+        for line in lines:
+            diff_output = repo.git.diff(line)
+            if diff_output != '':
+                print(diff_output + '\n')
+
+                try:
+                    diff_txt.write(diff_output + '\n')
+                except IOError:
+                    abort('Failed to generate git diff ' + line)
+
+        diff_txt.close()
 
     file_cleanup = [FILE_LIST, UNC_EXEC, UNC_CONF]
     for file in file_cleanup:
