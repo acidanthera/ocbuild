@@ -6,9 +6,11 @@ import shutil
 import subprocess
 import sys
 
+
 def abort(message):
     print('ERROR: ' + message + '!')
     sys.exit(1)
+
 
 # pip install gitpython
 try:
@@ -37,7 +39,7 @@ except OSError:
 UNSUPPORTED_DIST = os.getenv('UNSUPPORTED_DIST', default=0)
 DIST = platform.uname().system
 if UNSUPPORTED_DIST != 1:
-    if DIST != 'Darwin' and DIST != 'Linux' and DIST != 'Windows':
+    if DIST not in ('Darwin', 'Linux', 'Windows'):
         abort('Unsupported OS distribution ' + DIST)
 
 PROJECT_TYPE = os.getenv('PROJECT_TYPE', default='<empty string>')
@@ -48,19 +50,20 @@ cmake_stat = shutil.which('cmake')
 if cmake_stat is None:
     abort('Missing cmake')
 
-UNC_REPO='Uncrustify-repo'
-UNC_LINK='https://projectmu@dev.azure.com/projectmu/Uncrustify/_git/Uncrustify'
-UNC_CONF='unc-' + PROJECT_TYPE + '.cfg'
-FILE_LIST='filelist.txt'
-UNC_DIFF='uncrustify.diff'
-BUILD_SCHEME='Release'
+UNC_REPO = 'Uncrustify-repo'
+UNC_LINK = 'https://projectmu@dev.azure.com/projectmu/Uncrustify/_git/Uncrustify'
+UNC_CONF = 'unc-' + PROJECT_TYPE + '.cfg'
+FILE_LIST = 'filelist.txt'
+UNC_DIFF = 'uncrustify.diff'
+BUILD_SCHEME = 'Release'
 
 UNC_EXEC = 'uncrustify'
 if DIST == 'Windows':
     UNC_EXEC += '.exe'
 
+
 def dump_file_list(yml_file):
-    with open(yml_file, 'r') as buffer:
+    with open(yml_file, mode='r', encoding='UTF-8') as buffer:
         try:
             yaml_buffer = yaml.safe_load(buffer)
             try:
@@ -72,21 +75,22 @@ def dump_file_list(yml_file):
 
     # Match .c and .h files
     file_list = [os.path.join(path, name) for path, subdirs, files in os.walk(os.getcwd()) for name in files if name.lower().endswith((".c", ".h"))]
-    list_txt  = open(FILE_LIST, 'w')
-    for f in file_list:
+    list_txt = open(FILE_LIST, 'w')
+    for file in file_list:
         skip = False
-        for e in exclude_list:
-            if os.path.normpath(e) in os.path.normpath(f):
+        for excl in exclude_list:
+            if os.path.normpath(excl) in os.path.normpath(file):
                 skip = True
 
         if skip:
             continue
 
         try:
-            list_txt.write(f + '\n')
+            list_txt.write(file + '\n')
         except IOError:
             abort('Failed to dump file list')
     list_txt.close()
+
 
 """
 shutil.rmtree error handling.
@@ -101,7 +105,7 @@ def onerror(func, path, exc_info):
     it attempts to add write permission and then retries.
 
     If the error is for another reason it re-raises the error.
-    
+
     Usage : ``shutil.rmtree(path, onerror=onerror)``
     """
     import stat
@@ -165,14 +169,14 @@ def build_uncrustify(url):
 
     try:
         shutil.rmtree(UNC_REPO, onerror=onerror)
-    except OSError as e:
-        print(e)
+    except OSError as exc:
+        print(exc)
         abort('Failed to cleanup ' + UNC_REPO)
 
 def download_uncrustify_conf():
     response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/unc-build/uncrustify/configs/' + UNC_CONF)
-    with open(UNC_CONF, 'wb') as f:
-        f.write(response.content)
+    with open(UNC_CONF, 'wb') as conf:
+        conf.write(response.content)
 
 def run_uncrustify():
     if os.path.isfile(UNC_DIFF):
@@ -205,8 +209,8 @@ def run_uncrustify():
         if os.path.isfile(fc):
             try:
                 os.remove(fc)
-            except OSError as e:
-                print(e)
+            except OSError as exc:
+                print(exc)
                 abort('Failed to cleanup legacy ' + fc)
 
     if os.stat(UNC_DIFF).st_size != 0:
