@@ -64,7 +64,7 @@ if DIST == 'Windows':
 
 
 def dump_file_list(yml_file):
-    with open(yml_file, mode='r', encoding='UTF-8') as buffer:
+    with open(yml_file, mode='r') as buffer:
         try:
             yaml_buffer = yaml.safe_load(buffer)
             try:
