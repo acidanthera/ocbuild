@@ -3,6 +3,7 @@
 import os
 import platform
 import shutil
+import stat
 import subprocess
 import sys
 
@@ -91,7 +92,7 @@ def dump_file_list(yml_file):
 # shutil.rmtree error handling.
 # From: https://stackoverflow.com/a/2656405
 #
-def onerror(func, path, exc_info):
+def onerror(func, path, *_):
     """
     Error handler for ``shutil.rmtree``.
 
@@ -102,13 +103,10 @@ def onerror(func, path, exc_info):
 
     Usage : ``shutil.rmtree(path, onerror=onerror)``
     """
-    import stat
     # Is the error an access error?
     if not os.access(path, os.W_OK):
         os.chmod(path, stat.S_IWUSR)
         func(path)
-    else:
-        raise
 
 
 def build_uncrustify(url):
