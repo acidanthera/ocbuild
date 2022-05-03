@@ -14,13 +14,12 @@ import requests
 import yaml
 
 # pip install gitpython
-import git
 from git import Repo
 
 
 def abort(message):
     print('ERROR: ' + message + '!')
-    exit(1)
+    sys.exit(1)
 
 
 UNSUPPORTED_DIST = os.getenv('UNSUPPORTED_DIST', '0')
@@ -56,7 +55,7 @@ if DIST == 'Windows':
 
 
 def dump_file_list(yml_file):
-    with open(yml_file, mode='r') as buffer:
+    with open(yml_file, mode='r', encoding='UTF-8') as buffer:
         yaml_buffer = yaml.safe_load(buffer)
         exclude_list = yaml_buffer['exclude_list']
 
@@ -64,7 +63,7 @@ def dump_file_list(yml_file):
 
     # Match .c and .h files
     file_list = [os.path.join(path, name) for path, subdirs, files in os.walk(os.getcwd()) for name in files if name.lower().endswith((".c", ".h"))]
-    with open(FILE_LIST, 'w') as list_txt:
+    with open(FILE_LIST, 'w', encoding='UTF-8') as list_txt:
         for file in file_list:
             skip = False
             for excl in exclude_list:
@@ -146,12 +145,12 @@ def run_uncrustify():
     unc_args = [UNC_EXEC, '-c', UNC_CONF, '-F', FILE_LIST, '--replace', '--no-backup', '--if-changed']
     subprocess.check_call(unc_args)
 
-    with open(FILE_LIST, 'r') as list_buffer:
+    with open(FILE_LIST, 'r', encoding='UTF-8') as list_buffer:
         lines = list_buffer.read().splitlines()
         list_buffer.close()
 
     repo = Repo(os.getcwd())
-    with open(UNC_DIFF, 'w') as diff_txt:
+    with open(UNC_DIFF, 'w', encoding='UTF-8') as diff_txt:
         for line in lines:
             diff_output = repo.git.diff(line)
             if diff_output != '':
@@ -183,5 +182,5 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as ex:
-        print("Bailed beacuse: {}".format(ex))
-        exit(1)
+        print(f"Bailed beacuse: {ex}")
+        sys.exit(1)
