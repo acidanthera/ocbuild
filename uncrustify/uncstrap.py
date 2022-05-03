@@ -1,40 +1,28 @@
 #!/usr/bin/env python3
 
+# pip install gitpython
+import git
+from git import Repo
 import os
 import platform
+# pip install requests
+import requests
 import shutil
 import stat
 import subprocess
 import sys
+# pip install pyyaml
+import yaml
 
 
 def abort(message):
     print('ERROR: ' + message + '!')
     sys.exit(1)
 
-
-# pip install gitpython
-try:
-    import git
-    from git import Repo
-except ImportError:
-    abort('Failed to import git')
-
-# pip install requests
-try:
-    import requests
-except ImportError:
-    abort('Failed to import requests')
-
-# pip install yaml
-try:
-    import yaml
-except ImportError:
-    abort('Failed to import yaml')
-
 try:
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
-except OSError:
+except OSError as ex:
+    print(ex)
     abort('Failed to switch to current directory')
 
 UNSUPPORTED_DIST = os.getenv('UNSUPPORTED_DIST', default=0)
