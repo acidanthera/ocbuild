@@ -20,7 +20,7 @@ from git import Repo
 
 def abort(message):
     print('ERROR: ' + message + '!')
-    sys.exit(1)
+    exit(1)
 
 
 UNSUPPORTED_DIST = os.getenv('UNSUPPORTED_DIST', '0')
@@ -57,14 +57,8 @@ if DIST == 'Windows':
 
 def dump_file_list(yml_file):
     with open(yml_file, mode='r') as buffer:
-        try:
-            yaml_buffer = yaml.safe_load(buffer)
-            try:
-                exclude_list = yaml_buffer['exclude_list']
-            except KeyError:
-                abort('exclude_list is not found in ' + yml_file)
-        except yaml.YAMLError:
-            abort('Failed to read Uncrustify.yml')
+        yaml_buffer = yaml.safe_load(buffer)
+        exclude_list = yaml_buffer['exclude_list']
 
         buffer.close()
 
@@ -80,10 +74,7 @@ def dump_file_list(yml_file):
             if skip:
                 continue
 
-            try:
-                list_txt.write(file + '\n')
-            except IOError:
-                abort('Failed to dump file list')
+            list_txt.write(file + '\n')
 
         list_txt.close()
 
@@ -111,29 +102,14 @@ def onerror(func, path, *_):
 
 def build_uncrustify(url):
     if os.path.isdir(UNC_REPO):
-        try:
-            shutil.rmtree(UNC_REPO, onerror=onerror)
-        except OSError:
-            abort('Failed to cleanup legacy ' + UNC_REPO)
+        shutil.rmtree(UNC_REPO, onerror=onerror)
 
     proj_root = os.getcwd()
 
-    try:
-        Repo.clone_from(url, UNC_REPO)
-    except git.exc.GitCommandError:
-        abort('Failed to clone ' + UNC_REPO)
-    try:
-        os.chdir(UNC_REPO)
-    except OSError:
-        abort('Failed to switch to ' + UNC_REPO)
-    try:
-        os.mkdir('build')
-    except OSError:
-        abort('Failed to make temporary build directory')
-    try:
-        os.chdir('build')
-    except OSError:
-        abort('Failed to cd to temporary build directory')
+    Repo.clone_from(url, UNC_REPO)
+    os.chdir(UNC_REPO)
+    os.mkdir('build')
+    os.chdir('build')
 
     cmake_args = ['cmake', '..']
     ret = subprocess.check_call(cmake_args)
@@ -145,26 +121,16 @@ def build_uncrustify(url):
         abort('Failed to build Uncrustify ' + BUILD_SCHEME)
 
     global UNC_EXEC
-    try:
-        exe = next((os.path.abspath(os.path.join(root, name)) for root, dirs, files in os.walk(os.getcwd()) for name in files if name == UNC_EXEC), None)
-    except StopIteration:
-        abort('Failed to find uncrustify binary')
+    exe = next((os.path.abspath(os.path.join(root, name)) for root, dirs, files in os.walk(os.getcwd()) for name in files if name == UNC_EXEC), None)
 
-    try:
-        shutil.move(exe, proj_root)
-    except FileNotFoundError:
-        abort('Failed to locate uncrustify binary')
+    shutil.move(exe, proj_root)
 
     # update UNC_EXEC path
     UNC_EXEC = proj_root + '/' + UNC_EXEC
 
     os.chdir(proj_root)
 
-    try:
-        shutil.rmtree(UNC_REPO, onerror=onerror)
-    except OSError as exc:
-        print(exc)
-        abort('Failed to cleanup ' + UNC_REPO)
+    shutil.rmtree(UNC_REPO, onerror=onerror)
 
 
 def download_uncrustify_conf():
@@ -175,10 +141,7 @@ def download_uncrustify_conf():
 
 def run_uncrustify():
     if os.path.isfile(UNC_DIFF):
-        try:
-            os.remove(UNC_DIFF)
-        except OSError:
-            abort('Failed to cleanup legacy ' + UNC_DIFF)
+        os.remove(UNC_DIFF)
 
     unc_args = [UNC_EXEC, '-c', UNC_CONF, '-F', FILE_LIST, '--replace', '--no-backup', '--if-changed']
     subprocess.check_call(unc_args)
@@ -193,31 +156,20 @@ def run_uncrustify():
             diff_output = repo.git.diff(line)
             if diff_output != '':
                 print(diff_output + '\n')
-
-                try:
-                    diff_txt.write(diff_output + '\n')
-                except IOError:
-                    abort('Failed to generate git diff ' + line)
+                diff_txt.write(diff_output + '\n')
 
         diff_txt.close()
 
     file_cleanup = [FILE_LIST, UNC_EXEC, UNC_CONF]
     for file in file_cleanup:
         if os.path.isfile(file):
-            try:
-                os.remove(file)
-            except OSError as exc:
-                print(exc)
-                abort('Failed to cleanup legacy ' + file)
+            os.remove(file)
 
     if os.stat(UNC_DIFF).st_size != 0:
         abort('Uncrustify detects codestyle problems! Please fix')
     else:
         print('All done! Uncrustify detects no problems!')
-        try:
-            os.remove(UNC_DIFF)
-        except OSError:
-            abort('Failed to remove empty ' + UNC_DIFF)
+        os.remove(UNC_DIFF)
 
 
 def main():
@@ -228,4 +180,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as ex:
+        print("Bailed beacuse: {}".format(ex))
+        exit(1)
