@@ -114,9 +114,9 @@ def build_uncrustify(url):
     exe = next((os.path.abspath(os.path.join(root, name)) for root, dirs, files in os.walk(os.getcwd()) for name in files if name in ('uncrustify', 'uncrustify.exe')), None)
     if exe is None:
         raise ValueError('Uncrustify binary is not found!')
+    shutil.move(exe, proj_root)
     # append absolute path to exe
     exe = os.path.normpath(exe)
-    shutil.move(exe, proj_root)
 
     os.chdir(proj_root)
     shutil.rmtree(UNC_REPO, onerror=onerror)
