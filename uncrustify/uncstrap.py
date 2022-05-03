@@ -23,12 +23,6 @@ def abort(message):
     sys.exit(1)
 
 
-try:
-    os.chdir(os.path.dirname(os.path.realpath(__file__)))
-except OSError as ex:
-    print(ex)
-    abort('Failed to switch to current directory')
-
 UNSUPPORTED_DIST = os.getenv('UNSUPPORTED_DIST', '0')
 DIST = platform.uname().system
 if UNSUPPORTED_DIST != 1:
@@ -42,6 +36,12 @@ if PROJECT_TYPE != 'UEFI':
 cmake_stat = shutil.which('cmake')
 if cmake_stat is None:
     abort('Missing cmake')
+
+try:
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
+except OSError as ex:
+    print(ex)
+    abort('Failed to switch to current directory')
 
 UNC_REPO = 'Uncrustify-repo'
 UNC_LINK = 'https://projectmu@dev.azure.com/projectmu/Uncrustify/_git/Uncrustify'
