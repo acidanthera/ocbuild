@@ -49,10 +49,6 @@ FILE_LIST = 'filelist.txt'
 UNC_DIFF = 'uncrustify.diff'
 BUILD_SCHEME = 'Release'
 
-UNC_EXEC = 'uncrustify'
-if DIST == 'Windows':
-    UNC_EXEC += '.exe'
-
 
 def dump_file_list(yml_file):
     with open(yml_file, mode='r', encoding='UTF-8') as buffer:
@@ -115,17 +111,17 @@ def build_uncrustify(url):
     if ret != 0:
         abort('Failed to build Uncrustify ' + BUILD_SCHEME)
 
-    global UNC_EXEC
-    exe = next((os.path.abspath(os.path.join(root, name)) for root, dirs, files in os.walk(os.getcwd()) for name in files if name == UNC_EXEC), None)
-
+    exe = next((os.path.abspath(os.path.join(root, name)) for root, dirs, files in os.walk(os.getcwd()) for name in files if name in ('uncrustify', 'uncrustify.exe')), None)
+    if exe is None:
+        raise ValueError('Uncrustify binary is not found!')
+    # append absolute path to exe
+    exe = os.path.normpath(exe)
     shutil.move(exe, proj_root)
 
-    # update UNC_EXEC path
-    UNC_EXEC = proj_root + '/' + UNC_EXEC
-
     os.chdir(proj_root)
-
     shutil.rmtree(UNC_REPO, onerror=onerror)
+
+    return exe
 
 
 def download_uncrustify_conf():
@@ -134,11 +130,11 @@ def download_uncrustify_conf():
         conf.write(response.content)
 
 
-def run_uncrustify():
+def run_uncrustify(unc_exec):
     if os.path.isfile(UNC_DIFF):
         os.remove(UNC_DIFF)
 
-    unc_args = [UNC_EXEC, '-c', UNC_CONF, '-F', FILE_LIST, '--replace', '--no-backup', '--if-changed']
+    unc_args = [unc_exec, '-c', UNC_CONF, '-F', FILE_LIST, '--replace', '--no-backup', '--if-changed']
     subprocess.check_call(unc_args)
 
     with open(FILE_LIST, 'r', encoding='UTF-8') as list_buffer:
@@ -152,7 +148,7 @@ def run_uncrustify():
                 print(diff_output + '\n')
                 diff_txt.write(diff_output + '\n')
 
-    file_cleanup = [FILE_LIST, UNC_EXEC, UNC_CONF]
+    file_cleanup = [FILE_LIST, unc_exec, UNC_CONF]
     for file in file_cleanup:
         if os.path.isfile(file):
             os.remove(file)
@@ -166,9 +162,9 @@ def run_uncrustify():
 
 def main():
     dump_file_list(sys.argv[1])
-    build_uncrustify(UNC_LINK)
+    unc_exec = build_uncrustify(UNC_LINK)
     download_uncrustify_conf()
-    run_uncrustify()
+    run_uncrustify(unc_exec)
 
 
 if __name__ == '__main__':
