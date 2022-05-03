@@ -8,7 +8,6 @@ import platform
 # pip install requests
 import requests
 import shutil
-import stat
 import subprocess
 import sys
 # pip install pyyaml
@@ -88,7 +87,7 @@ def dump_file_list(yml_file):
 # shutil.rmtree error handling.
 # From: https://stackoverflow.com/a/2656405
 #
-def onerror(func, path):
+def onerror(func, path, exc_info):
     """
     Error handler for ``shutil.rmtree``.
 
@@ -99,11 +98,13 @@ def onerror(func, path):
 
     Usage : ``shutil.rmtree(path, onerror=onerror)``
     """
+    import stat
     # Is the error an access error?
     if not os.access(path, os.W_OK):
         os.chmod(path, stat.S_IWUSR)
         func(path)
-
+    else:
+        raise
 
 def build_uncrustify(url):
     if os.path.isdir(UNC_REPO):
