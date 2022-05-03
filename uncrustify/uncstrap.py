@@ -59,8 +59,6 @@ def dump_file_list(yml_file):
         yaml_buffer = yaml.safe_load(buffer)
         exclude_list = yaml_buffer['exclude_list']
 
-        buffer.close()
-
     # Match .c and .h files
     file_list = [os.path.join(path, name) for path, subdirs, files in os.walk(os.getcwd()) for name in files if name.lower().endswith((".c", ".h"))]
     with open(FILE_LIST, 'w', encoding='UTF-8') as list_txt:
@@ -74,8 +72,6 @@ def dump_file_list(yml_file):
                 continue
 
             list_txt.write(file + '\n')
-
-        list_txt.close()
 
 
 #
@@ -147,7 +143,6 @@ def run_uncrustify():
 
     with open(FILE_LIST, 'r', encoding='UTF-8') as list_buffer:
         lines = list_buffer.read().splitlines()
-        list_buffer.close()
 
     repo = Repo(os.getcwd())
     with open(UNC_DIFF, 'w', encoding='UTF-8') as diff_txt:
@@ -156,8 +151,6 @@ def run_uncrustify():
             if diff_output != '':
                 print(diff_output + '\n')
                 diff_txt.write(diff_output + '\n')
-
-        diff_txt.close()
 
     file_cleanup = [FILE_LIST, UNC_EXEC, UNC_CONF]
     for file in file_cleanup:
