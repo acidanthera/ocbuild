@@ -1,22 +1,26 @@
 #!/usr/bin/env python3
 
-# pip install gitpython
-import git
-from git import Repo
 import os
 import platform
-# pip install requests
-import requests
 import shutil
 import subprocess
 import sys
+
+# pip install requests
+import requests
+
 # pip install pyyaml
 import yaml
+
+# pip install gitpython
+import git
+from git import Repo
 
 
 def abort(message):
     print('ERROR: ' + message + '!')
     sys.exit(1)
+
 
 try:
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
@@ -24,13 +28,13 @@ except OSError as ex:
     print(ex)
     abort('Failed to switch to current directory')
 
-UNSUPPORTED_DIST = os.getenv('UNSUPPORTED_DIST', default=0)
+UNSUPPORTED_DIST = os.getenv('UNSUPPORTED_DIST', '0')
 DIST = platform.uname().system
 if UNSUPPORTED_DIST != 1:
     if DIST not in ('Darwin', 'Linux', 'Windows'):
         abort('Unsupported OS distribution ' + DIST)
 
-PROJECT_TYPE = os.getenv('PROJECT_TYPE', default='<empty string>')
+PROJECT_TYPE = os.getenv('PROJECT_TYPE', '')
 if PROJECT_TYPE != 'UEFI':
     abort('Unsupported project type ' + PROJECT_TYPE)
 
@@ -105,6 +109,7 @@ def onerror(func, path, exc_info):
         func(path)
     else:
         raise
+
 
 def build_uncrustify(url):
     if os.path.isdir(UNC_REPO):
