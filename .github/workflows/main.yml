@@ -1,4 +1,4 @@
-name: CI
+name: Analyze
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
     types: [published]
 
 jobs:
-  analyze-scripts:
-    name: Analyze Scripts
+  analyze-shell-scripts:
+    name: Shell Scripts
     runs-on: macos-latest
     env:
       JOB_TYPE: ANALYZE
@@ -24,3 +24,25 @@ jobs:
 
       - name: Run shellcheck
         run: find . \( -name "*.tool" -o -name "*.command" -o -name "*.sh" \) -exec sh -c 'for TargetFile; do shellcheck --severity=info "${TargetFile}" || exit 1; done' sh {} +
+
+  analyze-python-scripts:
+    name: Python Scripts
+    runs-on: ubuntu-latest
+    env:
+      JOB_TYPE: ANALYZE
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          python3 -m pip install prospector
+
+      - name: Run prospector
+        run: python3 -m prospector . -P ./prospector/profile.yml > prospector_result.txt || exit 1
+
+      - name: Upload prospector result to Artifacts
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: Prospector Artifacts
+          path: ./prospector_result.txt
