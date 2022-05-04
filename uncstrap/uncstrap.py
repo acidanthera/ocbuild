@@ -103,10 +103,10 @@ def build_uncrustify(url):
 
     # write sha to a file, so that actions/upload-artifact has access to it
     sha_txt = 'unc-sha.txt'
-    with open(sha_txt, 'w') as unc_sha:
+    with open(sha_txt, 'w', encoding='UTF-8') as unc_sha:
         unc_sha.write(sha)
     shutil.move(sha_txt, proj_root)
-    
+
     os.mkdir('build')
     os.chdir('build')
     cmake_args = ['cmake', '..']
@@ -157,8 +157,8 @@ def download_uncrustify_bin():
     if exe is None:
         raise ValueError('Uncrustify binary is not found!')
 
-    st = os.stat(exe)
-    os.chmod(exe, st.st_mode | stat.S_IEXEC)
+    exe_stat = os.stat(exe)
+    os.chmod(exe, exe_stat.st_mode | stat.S_IEXEC)
 
     return exe
 
