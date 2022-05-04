@@ -36,7 +36,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Uncrustify-Darwin-${{ env.UNC_SHA }}
-          path: ./Uncrustify-Darwin-${{ env.UNC_SHA }}.zip
+          path: ./uncstrap/Uncrustify-Darwin-${{ env.UNC_SHA }}.zip
 
   build-linux:
     name: Linux
@@ -63,7 +63,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Uncrustify-Linux-${{ env.UNC_SHA }}
-          path: ./Uncrustify-Linux-${{ env.UNC_SHA }}.zip
+          path: ./uncstrap/Uncrustify-Linux-${{ env.UNC_SHA }}.zip
 
   build-windows:
     name: Windows VS2019
@@ -92,4 +92,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Uncrustify-Windows-${{ env.UNC_SHA }}
-          path: ./Uncrustify-Windows-${{ env.UNC_SHA }}.zip
+          path: ./uncstrap/Uncrustify-Windows-${{ env.UNC_SHA }}.zip
