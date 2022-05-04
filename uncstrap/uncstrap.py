@@ -124,7 +124,6 @@ def build_uncrustify(url):
     shutil.move(exe, proj_root)
 
     os.chdir(proj_root)
-    shutil.rmtree(UNC_REPO, onerror=onerror)
 
 
 def download_uncrustify_conf():
