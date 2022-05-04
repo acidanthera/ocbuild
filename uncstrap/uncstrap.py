@@ -157,6 +157,7 @@ def download_uncrustify_bin():
     if exe is None:
         raise ValueError('Uncrustify binary is not found!')
 
+    st = os.stat(exe)
     os.chmod(exe, st.st_mode | stat.S_IEXEC)
 
     return exe
