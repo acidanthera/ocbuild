@@ -37,6 +37,7 @@ jobs:
         with:
           name: Uncrustify-Darwin-${{ env.UNC_SHA }}
           path: ./uncstrap/uncrustify
+          if-no-files-found: error
 
   build-linux:
     name: Linux
@@ -64,6 +65,7 @@ jobs:
         with:
           name: Uncrustify-Linux-${{ env.UNC_SHA }}
           path: ./uncstrap/uncrustify
+          if-no-files-found: error
 
   build-windows:
     name: Windows VS2019
@@ -93,3 +95,4 @@ jobs:
         with:
           name: Uncrustify-Windows-${{ env.UNC_SHA }}
           path: ./uncstrap/uncrustify.exe
+          if-no-files-found: error
