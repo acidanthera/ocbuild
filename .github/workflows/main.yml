@@ -35,7 +35,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          python3 -m pip install prospector
+          python3 -m pip install gitpython prospector pyyaml requests
 
       - name: Run prospector
         run: python3 -m prospector . -P ./prospector/profile.yml > prospector_result.txt || exit 1
