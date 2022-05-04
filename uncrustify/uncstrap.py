@@ -97,11 +97,12 @@ def build_uncrustify(url):
 
     proj_root = os.getcwd()
 
-    Repo.clone_from(url, UNC_REPO)
+    repo = Repo.clone_from(url, UNC_REPO)
     os.chdir(UNC_REPO)
+    sha = repo.head.object.hexsha
+
     os.mkdir('build')
     os.chdir('build')
-
     cmake_args = ['cmake', '..']
     ret = subprocess.check_call(cmake_args)
     if ret != 0:
@@ -121,14 +122,46 @@ def build_uncrustify(url):
     os.chdir(proj_root)
     shutil.rmtree(UNC_REPO, onerror=onerror)
 
-    # append absolute path to exe
-    return os.path.abspath(exe)
+    # archive binary
+    archive_name = 'Uncrustify-' + DIST + '-' + sha + '.zip'
+    zip_args = ['zip', archive_name, exe]
+    ret = subprocess.check_call(zip_args)
+    if ret != 0:
+        abort('Failed to produce ' + archive_name)
 
 
 def download_uncrustify_conf():
+    # TODO: update to master after merging
     response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/unc-build/uncrustify/configs/' + UNC_CONF)
     with open(UNC_CONF, 'wb') as conf:
         conf.write(response.content)
+
+
+def download_uncrustify_bin():
+    zip_name = 'Uncrustify-' + DIST + '.zip'
+    if os.path.isfile(zip_name):
+        os.remove(zip_name)
+
+    # TODO: update to master after merging
+    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/unc-build/external/' + zip_name)
+    real_filename = response.text
+
+    # TODO: update to master after merging
+    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/unc-build/external/' + real_filename)
+    with open(zip_name, 'wb') as archive:
+        archive.write(response.content)
+
+    unzip_args = ['unzip', '-qu', zip_name]
+    ret = subprocess.check_call(unzip_args)
+    if ret != 0:
+        abort('Failed to unzip ' + zip_name)
+    os.remove(zip_name)
+
+    exe = next((os.path.abspath(os.path.join(root, name)) for root, dirs, files in os.walk(os.getcwd()) for name in files if name in ('uncrustify', 'uncrustify.exe')), None)
+    if exe is None:
+        raise ValueError('Uncrustify binary is not found!')
+
+    return os.path.abspath(os.path.basename(exe))
 
 
 def run_uncrustify(unc_exec):
@@ -162,9 +195,13 @@ def run_uncrustify(unc_exec):
 
 
 def main():
+    if sys.argv[1] in ('-b', '--build'):
+        build_uncrustify(UNC_LINK)
+        sys.exit(0)
+
     dump_file_list(sys.argv[1])
-    unc_exec = build_uncrustify(UNC_LINK)
     download_uncrustify_conf()
+    unc_exec = download_uncrustify_bin()
     run_uncrustify(unc_exec)
 
 
