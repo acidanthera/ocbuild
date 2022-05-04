@@ -118,7 +118,7 @@ def build_uncrustify(url):
     if ret != 0:
         abort('Failed to build Uncrustify ' + BUILD_SCHEME)
 
-    exe = next((os.path.basename(os.path.join(root, name)) for root, dirs, files in os.walk(os.getcwd()) for name in files if name in ('uncrustify', 'uncrustify.exe')), None)
+    exe = next((os.path.abspath(os.path.join(root, name)) for root, dirs, files in os.walk(proj_root) for name in files if name in ('uncrustify', 'uncrustify.exe')), None)
     if exe is None:
         raise ValueError('Uncrustify binary is not found!')
     shutil.move(exe, proj_root)
