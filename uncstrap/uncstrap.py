@@ -126,12 +126,6 @@ def build_uncrustify(url):
     os.chdir(proj_root)
     shutil.rmtree(UNC_REPO, onerror=onerror)
 
-    # archive binary
-    archive_name = 'Uncrustify-' + DIST + '-' + sha + '.zip'
-    zip_args = ['zip', archive_name, exe]
-    ret = subprocess.check_call(zip_args)
-    if ret != 0:
-        abort('Failed to produce ' + archive_name)
 
 def download_uncrustify_conf():
     # TODO: update to master after merging
