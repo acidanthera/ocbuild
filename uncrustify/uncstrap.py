@@ -101,6 +101,12 @@ def build_uncrustify(url):
     os.chdir(UNC_REPO)
     sha = repo.head.object.hexsha
 
+    # write sha to a file, so that actions/upload-artifact has access to it
+    sha_txt = 'unc-sha.txt'
+    with open(sha_txt, 'w') as unc_sha:
+        unc_sha.write(sha)
+    shutil.move(sha_txt, proj_root)
+    
     os.mkdir('build')
     os.chdir('build')
     cmake_args = ['cmake', '..']
@@ -128,7 +134,6 @@ def build_uncrustify(url):
     ret = subprocess.check_call(zip_args)
     if ret != 0:
         abort('Failed to produce ' + archive_name)
-
 
 def download_uncrustify_conf():
     # TODO: update to master after merging
