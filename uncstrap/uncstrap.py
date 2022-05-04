@@ -135,7 +135,7 @@ def build_uncrustify(url):
 
 def download_uncrustify_conf():
     # TODO: update to master after merging
-    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/unc-build/uncrustify/configs/' + UNC_CONF)
+    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/unc-build/uncstrap/configs/' + UNC_CONF)
     with open(UNC_CONF, 'wb') as conf:
         conf.write(response.content)
 
