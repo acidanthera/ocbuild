@@ -45,7 +45,7 @@ except OSError as ex:
 UNC_REPO = 'Uncrustify-repo'
 UNC_LINK = 'https://projectmu@dev.azure.com/projectmu/Uncrustify/_git/Uncrustify'
 UNC_CONF = 'unc-' + PROJECT_TYPE + '.cfg'
-FILE_LIST = 'filelist.txt'
+SRC_LIST = 'unc-srclist.txt'
 UNC_DIFF = 'uncrustify.diff'
 BUILD_SCHEME = 'Release'
 
@@ -57,7 +57,7 @@ def dump_file_list(yml_file):
 
     # Match .c and .h files
     file_list = [os.path.join(path, name) for path, subdirs, files in os.walk(os.getcwd()) for name in files if name.lower().endswith((".c", ".h"))]
-    with open(FILE_LIST, 'w', encoding='UTF-8') as list_txt:
+    with open(SRC_LIST, 'w', encoding='UTF-8') as list_txt:
         for file in file_list:
             skip = False
             for excl in exclude_list:
@@ -171,10 +171,10 @@ def run_uncrustify(unc_exec):
     if os.path.isfile(UNC_DIFF):
         os.remove(UNC_DIFF)
 
-    unc_args = [unc_exec, '-c', UNC_CONF, '-F', FILE_LIST, '--replace', '--no-backup', '--if-changed']
+    unc_args = [unc_exec, '-c', UNC_CONF, '-F', SRC_LIST, '--replace', '--no-backup', '--if-changed']
     subprocess.check_call(unc_args)
 
-    with open(FILE_LIST, 'r', encoding='UTF-8') as list_buffer:
+    with open(SRC_LIST, 'r', encoding='UTF-8') as list_buffer:
         lines = list_buffer.read().splitlines()
 
     repo = Repo(os.getcwd())
@@ -185,7 +185,7 @@ def run_uncrustify(unc_exec):
                 print(diff_output + '\n')
                 diff_txt.write(diff_output + '\n')
 
-    file_cleanup = [FILE_LIST, unc_exec, UNC_CONF]
+    file_cleanup = [SRC_LIST, unc_exec, UNC_CONF]
     for file in file_cleanup:
         if os.path.isfile(file):
             os.remove(file)
