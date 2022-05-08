@@ -127,8 +127,7 @@ def build_uncrustify(url):
 
 
 def download_uncrustify_conf():
-    # TODO: update to master after merging
-    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/unc-build/uncstrap/configs/' + UNC_CONF)
+    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/master/uncstrap/configs/' + UNC_CONF)
     with open(UNC_CONF, 'wb') as conf:
         conf.write(response.content)
 
@@ -138,12 +137,10 @@ def download_uncrustify_bin():
     if os.path.isfile(zip_name):
         os.remove(zip_name)
 
-    # TODO: update to master after merging
-    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/unc-build/external/' + zip_name)
+    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/master/external/' + zip_name)
     real_filename = response.text
 
-    # TODO: update to master after merging
-    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/unc-build/external/' + real_filename)
+    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/master/external/' + real_filename)
     with open(zip_name, 'wb') as archive:
         archive.write(response.content)
 
