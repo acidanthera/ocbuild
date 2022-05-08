@@ -37,7 +37,7 @@ if cmake_stat is None:
     abort('Missing cmake')
 
 try:
-    os.chdir(os.path.dirname(os.path.realpath(__file__)))
+    os.chdir(os.getcwd())
 except OSError as ex:
     print(ex)
     abort('Failed to switch to current directory')
