@@ -188,9 +188,9 @@ def run_uncrustify(unc_exec):
 
     if os.stat(UNC_DIFF).st_size != 0:
         abort('Uncrustify detects codestyle problems! Please fix')
-    else:
-        print('All done! Uncrustify detects no problems!')
-        os.remove(UNC_DIFF)
+
+    print('All done! Uncrustify detects no problems!')
+    os.remove(UNC_DIFF)
 
 
 def main():
