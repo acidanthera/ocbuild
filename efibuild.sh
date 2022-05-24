@@ -311,7 +311,7 @@ while true; do
     shift
     BUILD_STRING="$1"
     # shellcheck disable=SC2206
-    BUILD_ARGUMENTS=($BUILD_STRING)
+    BUILD_ARGUMENTS+=($BUILD_STRING )
     shift
   else
     break
@@ -470,7 +470,7 @@ if [ "$SKIP_BUILD" != "1" ]; then
       for target in "${TARGETS[@]}" ; do
         if [ "$MODE" = "" ] || [ "$MODE" = "$target" ]; then
           if [ "${ARCHS_EXT[i]}" == "" ]; then
-            echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for ${ARCHS[i]} in $target with ${toolchain} and flags $BUILD_STRING ..."
+            echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for ${ARCHS[i]} in $target with ${toolchain} and flags ${BUILD_ARGUMENTS[@]} ..."
             buildme -a "${ARCHS[i]}" -b "$target" -t "${toolchain}" -p "${SELFPKG_DIR}/${SELFPKG}.dsc" "${BUILD_ARGUMENTS[@]}" || abortbuild
           else
             echo "Building ${SELFPKG_DIR}/${SELFPKG}.dsc for ${ARCHS[i]} with extra arch ${ARCHS_EXT[i]} in $target with ${toolchain} and flags $BUILD_STRING ..."
