@@ -101,3 +101,16 @@ else
   colored_text "gcc version"
   gcc --version
 fi
+
+colored_text "plist integer type check"
+ret=0
+while read -r line; do
+  if [ "$(grep '<real>.*</real>' "${line}")" != "" ]; then
+    echo "Please change <real>*</real> back to <integer>*</integer> in ${line}"
+    ret=1
+  fi
+done < <(find . -type f -name '*.plist')
+
+if [ "${ret}" != 0 ]; then
+  abort "Please fix integer type problems for the plist above"
+fi
