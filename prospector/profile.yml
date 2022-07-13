@@ -21,7 +21,6 @@ pylint:
     - import-error
     - too-many-boolean-expressions
     - too-many-lines
-    - consider-using-with
     - too-many-nested-blocks
     - too-many-instance-attributes
     - useless-suppression
