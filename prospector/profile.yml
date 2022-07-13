@@ -13,7 +13,6 @@ pylint:
     - too-many-arguments
     - too-many-locals
     - too-many-function-args
-    - inconsistent-return-statements
   load-plugins:
     - pylint.extensions.no_self_use
   run: true
