@@ -12,18 +12,8 @@ pylint:
     - invalid-name
     - too-many-arguments
     - too-many-locals
-    - too-few-public-methods
-    - too-many-branches
-    - too-many-statements
-    - redefined-outer-name
     - too-many-function-args
     - inconsistent-return-statements
-    - import-error
-    - too-many-boolean-expressions
-    - too-many-lines
-    - too-many-nested-blocks
-    - too-many-instance-attributes
-    - useless-suppression
   load-plugins:
     - pylint.extensions.no_self_use
   run: true
