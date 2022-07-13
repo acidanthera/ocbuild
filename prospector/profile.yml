@@ -12,7 +12,6 @@ pylint:
     - invalid-name
     - too-many-arguments
     - too-many-locals
-    - too-many-function-args
   load-plugins:
     - pylint.extensions.no_self_use
   run: true
