@@ -105,7 +105,7 @@ fi
 colored_text "plist integer type check"
 ret=0
 while read -r line; do
-  if [ "$(grep '<real>.*</real>' "${line}")" != "" ]; then
+  if [ "$(grep -z '<real>(.\|\s)*</real>' "${line}")" != "" ]; then
     echo "Please change <real>*</real> back to <integer>*</integer> in ${line}"
     # FIXME: Find better ways to patch the files
     perl -pi -e 's/<real>/<integer>/g' "${line}"
