@@ -8,6 +8,12 @@ pylint:
   disable:
     - broad-except
     - line-too-long
+    - too-many-public-methods
+    - invalid-name
+    - too-many-arguments
+    - too-many-locals
+  load-plugins:
+    - pylint.extensions.no_self_use
   run: true
 
 pycodestyle:
