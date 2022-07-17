@@ -107,9 +107,7 @@ ret=0
 while read -r line; do
   if [ "$(grep -z '<real>(.\|\s)*</real>' "${line}")" != "" ]; then
     echo "Please change <real>*</real> back to <integer>*</integer> in ${line}"
-    # FIXME: Find better ways to patch the files
-    perl -pi -e 's/<real>/<integer>/g' "${line}"
-    perl -pi -e 's/<\/real>/<\/integer>/g' "${line}"
+    sed -i '.bak' -E 's/<(\/)?real>/<\1integer>/g' "${line}"
     ret=1
   fi
 done < <(find . -type f -name '*.plist')
