@@ -176,15 +176,15 @@ downloadcert
 # Codesign inner applications.
 echo "Codesigning inner applications..."
 find "${apppath}"/* -name '*.app' -exec \
-  /usr/bin/codesign --force --deep --options runtime $extraflags -s "Developer ID" {} \; || abort "Unable to sign inner applications"
+  /usr/bin/codesign --force --deep --options runtime $(echo "$extraflags") -s "Developer ID" {} \; || abort "Unable to sign inner applications"
 
 echo "Codesigning inner plugins..."
 find "${apppath}"/* -name '*.qlgenerator' -exec \
-  /usr/bin/codesign --force --deep --options runtime $extraflags -s "Developer ID" {} \; || abort "Unable to sign inner plugins"
+  /usr/bin/codesign --force --deep --options runtime $(echo "$extraflags") -s "Developer ID" {} \; || abort "Unable to sign inner plugins"
 
 # Codesign the application.
 echo "Codesigning application..."
-/usr/bin/codesign --force --deep --options runtime $extraflags -s "Developer ID" "${apppath}" || abort "Unable to sign application"
+/usr/bin/codesign --force --deep --options runtime $(echo "$extraflags") -s "Developer ID" "${apppath}" || abort "Unable to sign application"
 
 # Compress the application.
 echo "Compressing application..."
