@@ -167,7 +167,8 @@ if [ "$identifier" = "" ]; then
   abort "Unable to locate application identifier" "Set CFBundleIdentifier in Info.plist"
 fi
 
-extraflags=($(echo "$3")) #shellcheck disable=SC2207
+#shellcheck disable=SC2207
+extraflags=($(echo "$3"))
 
 # Obtain certificate data.
 echo "Downloading the certificates..."
