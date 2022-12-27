@@ -1,0 +1,37 @@
+Adds missing EFI subsystem arguments into mtoc.
+
+diff --git a/efitools/mtoc.c b/efitools/mtoc.c
+index 5acab70..62f47f1 100644
+--- a/efitools/mtoc.c
++++ b/efitools/mtoc.c
+@@ -103,6 +103,8 @@ struct subsystem_argument subsystem_arguments[] = {
+     { "TOOL",			IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER },
+     { "USER_DEFINED",		IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER },
+     { "UEFI_DRIVER",		IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER },
++    { "MM_STANDALONE",     IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER},
++    { "MM_CORE_STANDALONE",     IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER},
+     { "DXE_CORE",		IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER },
+     { "SECURITY_CORE",		IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER },
+     { "COMBINED_PEIM_DRIVER",	IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER },
+@@ -114,6 +116,10 @@ struct subsystem_argument subsystem_arguments[] = {
+     { "runtime",		IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER },
+     { "rtdrv",			IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER },
+     { "DXE_RUNTIME_DRIVER",	IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER },
++    { "RT_DRIVER",	IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER },
++
++    { "DXE_SAL_DRIVER",	EFI_IMAGE_SUBSYSTEM_SAL_RUNTIME_DRIVER },
++    { "SAL_RT_DRIVER",	EFI_IMAGE_SUBSYSTEM_SAL_RUNTIME_DRIVER },
+ 
+     { NULL, 0 }
+ };
+diff --git a/include/coff/aouthdr.h b/include/coff/aouthdr.h
+index 74b1af6..0a4c2eb 100644
+--- a/include/coff/aouthdr.h
++++ b/include/coff/aouthdr.h
+@@ -130,5 +130,6 @@ struct aouthdr_64
+ #define IMAGE_SUBSYSTEM_EFI_APPLICATION		10
+ #define IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER	11
+ #define IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER	12
++#define EFI_IMAGE_SUBSYSTEM_SAL_RUNTIME_DRIVER       13///< defined PI Specification, 1.0
+ 
+ #endif /* _COFF_AOUTHDR_H */

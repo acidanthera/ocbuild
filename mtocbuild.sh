@@ -3,7 +3,7 @@
 CCTOOLS_VERSION=949.0.1
 CCTOOLS_NAME=cctools-${CCTOOLS_VERSION}
 CCTOOLS_ARCHIVE=${CCTOOLS_NAME}.tar.gz
-CCTOOLS_LINK=https://opensource.apple.com/tarballs/cctools/${CCTOOLS_ARCHIVE}
+CCTOOLS_LINK=https://github.com/apple-oss-distributions/cctools/archive/refs/tags/${CCTOOLS_ARCHIVE}
 MTOC_ARCHIVE="mtoc-${CCTOOLS_VERSION}-macosx.zip"
 MTOC_LATEST_ARCHIVE="mtoc-mac64.zip"
 MTOC_LATEST_HASH="mtoc-mac64.sha256"
@@ -14,7 +14,7 @@ SRC_DIR="$(pwd)"
 popd &>/dev/null || exit 1
 
 BUILD_DIR="/tmp/cctools.$(uuidgen)"
-CCTOOLS_DIR="${BUILD_DIR}/${CCTOOLS_NAME}"
+CCTOOLS_DIR="${BUILD_DIR}/cctools-${CCTOOLS_NAME}"
 DIST_DIR="${BUILD_DIR}/dist"
 
 quit() {
@@ -44,6 +44,7 @@ curl -OL "${CCTOOLS_LINK}"                               || abort "Cannot downlo
 tar -xf "${CCTOOLS_ARCHIVE}"                             || abort "Cannot extract cctools ${CCTOOLS_ARCHIVE}"
 cd "${CCTOOLS_DIR}"                                      || abort "Cannot switch to cctools dir ${CCTOOLS_DIR}"
 patch -p1 < "${SRC_DIR}/patches/mtoc-permissions.patch"  || abort "Cannot apply mtoc-permissions.patch"
+patch -p1 < "${SRC_DIR}/patches/mtoc-add-missing-efi-subsystems.patch"  || abort "Cannot apply mtoc-add-missing-efi-subsystems.patch"
 make LTO= EFITOOLS=efitools -C libstuff                  || abort "Cannot build libstuff"
 make -C efitools                                         || abort "Cannot build efitools"
 strip -x "${CCTOOLS_DIR}/efitools/mtoc.NEW"              || abort "Cannot strip mtoc"
