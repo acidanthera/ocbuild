@@ -7,6 +7,7 @@ CCTOOLS_LINK=https://github.com/apple-oss-distributions/cctools/archive/refs/tag
 MTOC_ARCHIVE="mtoc-${CCTOOLS_VERSION}-macosx.zip"
 MTOC_LATEST_ARCHIVE="mtoc-mac64.zip"
 MTOC_LATEST_HASH="mtoc-mac64.sha256"
+EXTRA_CFLAGS="-mmacosx-version-min=10.9 -arch x86_64 -arch arm64"
 
 SRC_DIR=$(dirname "$0")
 pushd "$SRC_DIR" &>/dev/null || exit 1
@@ -44,9 +45,11 @@ curl -OL "${CCTOOLS_LINK}"                               || abort "Cannot downlo
 tar -xf "${CCTOOLS_ARCHIVE}"                             || abort "Cannot extract cctools ${CCTOOLS_ARCHIVE}"
 cd "${CCTOOLS_DIR}"                                      || abort "Cannot switch to cctools dir ${CCTOOLS_DIR}"
 patch -p1 < "${SRC_DIR}/patches/mtoc-permissions.patch"  || abort "Cannot apply mtoc-permissions.patch"
-patch -p1 < "${SRC_DIR}/patches/mtoc-add-missing-efi-subsystems.patch"  || abort "Cannot apply mtoc-add-missing-efi-subsystems.patch"
-make LTO= EFITOOLS=efitools -C libstuff                  || abort "Cannot build libstuff"
-make -C efitools                                         || abort "Cannot build efitools"
+patch -p1 < "${SRC_DIR}/patches/mtoc-add-missing-efi-subsystems.patch" \
+                                                         || abort "Cannot apply mtoc-add-missing-efi-subsystems.patch"
+RC_CFLAGS="$EXTRA_CFLAGS" make LTO= EFITOOLS=efitools -C libstuff \
+                                                         || abort "Cannot build libstuff"
+RC_CFLAGS="$EXTRA_CFLAGS" make -C efitools               || abort "Cannot build efitools"
 strip -x "${CCTOOLS_DIR}/efitools/mtoc.NEW"              || abort "Cannot strip mtoc"
 mkdir "${DIST_DIR}"                                      || abort "Cannot create dist dir ${DIST_DIR}"
 cd "${DIST_DIR}"                                         || abort "Cannot switch to dist dir ${DIST_DIR}"
