@@ -391,7 +391,9 @@ done
 
 if [ "$NEW_BUILDSYSTEM" != "1" ]; then
   # Allow building non-self packages.
-  symlink .. "${SELFPKG_DIR}" || exit 1
+  if [ ! -e "${SELFPKG_DIR}" ]; then
+    symlink .. "${SELFPKG_DIR}" || exit 1
+  fi
 fi
 
 . ./edksetup.sh || exit 1
