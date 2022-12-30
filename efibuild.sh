@@ -355,9 +355,9 @@ cd UDK || exit 1
 HASH=$(git rev-parse origin/master)
 
 if [ "$DISCARD_PACKAGES" != "" ]; then 
-  for package in "${DISCARD_PACKAGES[@]}" ; do
-    if [ -d "${package}" ]; then
-      rm -rf "${package}"
+  for package_to_discard in "${DISCARD_PACKAGES[@]}" ; do
+    if [ -d "${package_to_discard}" ]; then
+      rm -rf "${package_to_discard}"
     fi
   done
 fi
