@@ -382,8 +382,14 @@ for (( i=0; i<deps; i++ )) ; do
 done
 
 if [ "$NEW_BUILDSYSTEM" != "1" ]; then
-  # Allow building non-self packages.
-  symlink .. "${SELFPKG_DIR}" || exit 1
+  # Force-create a symlink when:
+  # - the destination directory is missing;
+  # - it exists and matches current package name.
+  # The second condition is important to keep compatibility with e.g. out of tree OVMF builder.
+  if [ ! -e "${SELFPKG_DIR}" ] || [ "$(basename "$(pwd)")" = "${SELFPKG_DIR}" ]; then
+    echo "Making ${SELFPKG_DIR} symlink"
+    symlink .. "${SELFPKG_DIR}" || exit 1
+  fi
 fi
 
 . ./edksetup.sh || exit 1
