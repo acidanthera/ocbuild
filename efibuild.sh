@@ -86,10 +86,10 @@ buildme() {
 }
 
 symlink() {
-  rm -rf "$2"
   if [ "$(unamer)" = "Windows" ]; then
     # This requires extra permissions.
     # cmd <<< "mklink /D \"$2\" \"${1//\//\\}\"" > /dev/null
+    rm -rf "$2"
     mkdir -p "$2" || exit 1
     for i in "$1"/* ; do
       if [ "$(echo "${i}" | grep "$(basename "$(pwd)")")" != "" ]; then
@@ -97,7 +97,7 @@ symlink() {
       fi
       cp -r "$i" "$2" || exit 1
     done
-  else
+  elif [ ! -d "$2" ]; then
     ln -s "$1" "$2" || exit 1
   fi
 }
