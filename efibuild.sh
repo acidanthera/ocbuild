@@ -354,6 +354,14 @@ fi
 cd UDK || exit 1
 HASH=$(git rev-parse origin/master)
 
+if [ "$DISCARD_PACKAGES" != "" ]; then 
+  for package in "${DISCARD_PACKAGES[@]}" ; do
+    if [ -d "${package}" ]; then
+      rm -rf "${package}"
+    fi
+  done
+fi
+
 if [ "$NEW_BUILDSYSTEM" != "1" ]; then
   if [ -d ../Patches ]; then
     if [ ! -f patches.ready ]; then
