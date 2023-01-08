@@ -33,7 +33,7 @@ downloadcert() {
     abort "Unable to find macOS certificate password" "Set MAC_CERTIFICATE_PASSWORD environment variable"
   fi
 
-  curl -OL "https://github.com/acidanthera/ocbuild/raw/master/codesign/certificate.p12" || abort "Failed to download certificates"
+  curl -OL "https://github.com/acidanthera/ocbuild/raw/build-0.8.7/codesign/certificate.p12" || abort "Failed to download certificates"
 
   local pw
   pw=$(uuidgen)

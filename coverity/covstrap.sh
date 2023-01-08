@@ -12,10 +12,10 @@
 #  to be later used with Acidanthera products.
 #
 #  Latest version available at:
-#  https://raw.githubusercontent.com/acidanthera/ocbuild/master/coverity/covstrap.sh
+#  https://raw.githubusercontent.com/acidanthera/ocbuild/build-0.8.7/coverity/covstrap.sh
 #
 #  Example usage:
-#  src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/ocbuild/master/coverity/covstrap.sh) && eval "$src" || exit 1
+#  src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/ocbuild/build-0.8.7/coverity/covstrap.sh) && eval "$src" || exit 1
 #
 
 abort() {

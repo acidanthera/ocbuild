@@ -167,10 +167,10 @@ if [ "$(nasm -v)" = "" ] || [ "$(nasm -v | grep Apple)" != "" ]; then
   fi
   pushd /tmp >/dev/null || exit 1
   rm -rf nasm-mac64.zip
-  curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/nasm-mac64.zip" || exit 1
+  curl -OL "https://github.com/acidanthera/ocbuild/raw/build-0.8.7/external/nasm-mac64.zip" || exit 1
   nasmzip=$(cat nasm-mac64.zip)
   rm -rf nasm-*
-  curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/${nasmzip}" || exit 1
+  curl -OL "https://github.com/acidanthera/ocbuild/raw/build-0.8.7/external/${nasmzip}" || exit 1
   unzip -q "${nasmzip}" nasm*/nasm nasm*/ndisasm || exit 1
   sudo mkdir -p /usr/local/bin || exit 1
   sudo mv nasm*/nasm /usr/local/bin/ || exit 1
@@ -190,10 +190,10 @@ if [ "$(iasl -v)" = "" ]; then
   fi
   pushd /tmp >/dev/null || exit 1
   rm -rf iasl-macosx.zip
-  curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/iasl-macosx.zip" || exit 1
+  curl -OL "https://github.com/acidanthera/ocbuild/raw/build-0.8.7/external/iasl-macosx.zip" || exit 1
   iaslzip=$(cat iasl-macosx.zip)
   rm -rf iasl
-  curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/${iaslzip}" || exit 1
+  curl -OL "https://github.com/acidanthera/ocbuild/raw/build-0.8.7/external/${iaslzip}" || exit 1
   unzip -q "${iaslzip}" iasl || exit 1
   sudo mkdir -p /usr/local/bin || exit 1
   sudo mv iasl /usr/local/bin/ || exit 1
@@ -202,7 +202,7 @@ if [ "$(iasl -v)" = "" ]; then
 fi
 
 if [ "${MTOC_HASH}" = "" ]; then
-  MTOC_HASH=$(curl -L "https://github.com/acidanthera/ocbuild/raw/master/external/mtoc-mac64.sha256") || exit 1
+  MTOC_HASH=$(curl -L "https://github.com/acidanthera/ocbuild/raw/build-0.8.7/external/mtoc-mac64.sha256") || exit 1
 fi
 
 if [ "${MTOC_HASH}" = "" ]; then
@@ -243,10 +243,10 @@ if ! $valid_mtoc; then
   prompt "Install prebuilt mtoc automatically?"
   pushd /tmp >/dev/null || exit 1
   rm -f mtoc mtoc-mac64.zip
-  curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/mtoc-mac64.zip" || exit 1
+  curl -OL "https://github.com/acidanthera/ocbuild/raw/build-0.8.7/external/mtoc-mac64.zip" || exit 1
   mtoczip=$(cat mtoc-mac64.zip)
   rm -rf mtoc-*
-  curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/${mtoczip}" || exit 1
+  curl -OL "https://github.com/acidanthera/ocbuild/raw/build-0.8.7/external/${mtoczip}" || exit 1
   unzip -q "${mtoczip}" mtoc || exit 1
   sudo mkdir -p /usr/local/bin || exit 1
   sudo rm -f /usr/local/bin/mtoc /usr/local/bin/mtoc.NEW || exit 1
@@ -346,13 +346,13 @@ fi
 
 if [ "$NEW_BUILDSYSTEM" != "1" ]; then
   if [ "$OFFLINE_MODE" != "1" ]; then
-    updaterepo "https://github.com/acidanthera/audk" UDK master || exit 1
+    updaterepo "https://github.com/acidanthera/audk" UDK build-0.8.7 || exit 1
   else
     echo "Working in offline mode. Skip UDK update"
   fi
 fi
 cd UDK || exit 1
-HASH=$(git rev-parse origin/master)
+HASH=$(git rev-parse '@{upstream}')
 
 if [ "$NEW_BUILDSYSTEM" != "1" ]; then
   if [ -d ../Patches ]; then
