@@ -435,7 +435,7 @@ if [ "$NEW_BUILDSYSTEM" != "1" ]; then
       if [ -d "${WINSDK_BASE}" ]; then
         for dir in "${WINSDK_BASE}"/*/; do
           if [ -f "${dir}x86/rc.exe" ]; then
-            WINSDK_PATH_FOR_RC_EXE="${dir}x86/rc.exe"
+            WINSDK_PATH_FOR_RC_EXE="${dir}x86"
             WINSDK_PATH_FOR_RC_EXE="${WINSDK_PATH_FOR_RC_EXE//\//\\}"
             WINSDK_PATH_FOR_RC_EXE="${WINSDK_PATH_FOR_RC_EXE/\\c\\/C:\\}"
             break
