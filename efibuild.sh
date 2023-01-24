@@ -13,6 +13,16 @@ if [ "$OFFLINE_MODE" = "" ]; then
   OFFLINE_MODE=0
 fi
 
+is_array()
+{
+    # Detects if argument is an array, returns 1 on sucess, 0 otherwise
+    [ -z "$1" ] && echo 0
+    if [ -n "$BASH" ]; then
+      declare -p "${1}" 2> /dev/null | grep 'declare \-a' >/dev/null && echo 1
+    fi
+    echo 0
+}
+
 prompt() {
   echo "$1"
   if [ "$FORCE_INSTALL" != "1" ]; then
@@ -251,11 +261,31 @@ if [ "$RELPKG" = "" ]; then
   RELPKG="$SELFPKG"
 fi
 
-if [ "$ARCHS" = "" ]; then
+if [ -n "$ARCHS" ] && [ "$(is_array ARCHS)" = "0" ]; then
+  IFS=', ' read -r -a ARCHS <<< "$ARCHS"
+fi
+
+if [ -n "$ARCHS_EXT" ] && [ "$(is_array ARCHS_EXT)" = "0" ]; then
+  IFS=', ' read -r -a ARCHS_EXT <<< "$ARCHS_EXT"
+fi
+
+if [ -n "$TOOLCHAINS" ] && [ "$(is_array TOOLCHAINS)" = "0" ]; then
+  IFS=', ' read -r -a TOOLCHAINS <<< "$TOOLCHAINS"
+fi
+
+if [ -n "$TARGETS" ] && [ "$(is_array TARGETS)" = "0" ]; then
+  IFS=', ' read -r -a TARGETS <<< "$TARGETS"
+fi
+
+if [ -n "$RTARGETS" ] && [ "$(is_array RTARGETS)" = "0" ]; then
+  IFS=', ' read -r -a RTARGETS <<< "$RTARGETS"
+fi
+
+if [ "${ARCHS[*]}" = "" ]; then
   ARCHS=('X64')
 fi
 
-if [ "$TOOLCHAINS" = "" ]; then
+if [ "${TOOLCHAINS[*]}" = "" ]; then
   if [ "$(unamer)" = "Darwin" ]; then
     TOOLCHAINS=('XCODE5')
   elif [ "$(unamer)" = "Windows" ]; then
@@ -265,7 +295,7 @@ if [ "$TOOLCHAINS" = "" ]; then
   fi
 fi
 
-if [ "$TARGETS" = "" ]; then
+if [ "${TARGETS[*]}" = "" ]; then
   TARGETS=('DEBUG' 'RELEASE' 'NOOPT')
 elif [ "${RTARGETS[*]}" = "" ]; then
   RTARGETS=("${TARGETS[@]}")
