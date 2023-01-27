@@ -211,15 +211,6 @@ if [ "$(iasl -v)" = "" ]; then
   popd >/dev/null || exit 1
 fi
 
-if [ "${MTOC_HASH}" = "" ]; then
-  MTOC_HASH=$(curl -L "https://github.com/acidanthera/ocbuild/raw/master/external/mtoc-mac64.sha256") || exit 1
-fi
-
-if [ "${MTOC_HASH}" = "" ]; then
-  echo "Cannot obtain the latest compatible mtoc hash!"
-  exit 1
-fi
-
 # On Darwin we need mtoc. Only for XCODE5, but do not care for now.
 if [ "$(unamer)" = "Darwin" ]; then
   valid_mtoc=false
@@ -227,48 +218,41 @@ else
   valid_mtoc=true
 fi
 
+MTOC_LATEST_VERSION="1.0.0"
+
 if [ "$(which mtoc)" != "" ]; then
-  mtoc_path=$(which mtoc)
-  mtoc_hash_user=$(shasum -a 256 "${mtoc_path}" | cut -d' ' -f1)
-  if [ "${MTOC_HASH}" = "${mtoc_hash_user}" ]; then
+  mtoc_version=$(mtoc --version)
+  if [ "${mtoc_version}" = "${MTOC_LATEST_VERSION}" ]; then
     valid_mtoc=true
   elif [ "${IGNORE_MTOC_VERSION}" = "1" ]; then
     echo "Forcing the use of UNKNOWN mtoc version due to IGNORE_MTOC_VERSION=1"
     valid_mtoc=true
-  elif [ "${mtoc_path}" != "/usr/local/bin/mtoc" ]; then
-    echo "Custom UNKNOWN mtoc is installed to ${mtoc_path}!"
-    echo "Hint: Remove this mtoc or use IGNORE_MTOC_VERSION=1 at your own risk."
-    exit 1
   else
-    echo "Found incompatible mtoc installed to ${mtoc_path}!"
-    echo "Expected SHA-256: ${MTOC_HASH}"
-    echo "Found SHA-256:    ${mtoc_hash_user}"
+    echo "Found incompatible mtoc installed to $(which mtoc)!"
+    echo "Expected version: ${MTOC_LATEST_VERSION}"
+    echo "Found version:    ${mtoc_version}"
     echo "Hint: Reinstall this mtoc or use IGNORE_MTOC_VERSION=1 at your own risk."
   fi
 fi
 
 if ! $valid_mtoc; then
   echo "Missing or incompatible mtoc!"
-  echo "To build mtoc follow: https://github.com/tianocore/tianocore.github.io/wiki/Xcode#mac-os-x-xcode"
+  echo "To build mtoc follow: https://github.com/acidanthera/ocmtoc"
   prompt "Install prebuilt mtoc automatically?"
   pushd /tmp >/dev/null || exit 1
-  rm -f mtoc mtoc-mac64.zip
-  curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/mtoc-mac64.zip" || exit 1
-  mtoczip=$(cat mtoc-mac64.zip)
-  rm -rf mtoc-*
-  curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/${mtoczip}" || exit 1
-  unzip -q "${mtoczip}" mtoc || exit 1
+  rm -f mtoc ocmtoc-${MTOC_LATEST_VERSION}-RELEASE.zip
+  curl -OL "https://github.com/acidanthera/ocmtoc/releases/download/${MTOC_LATEST_VERSION}/ocmtoc-${MTOC_LATEST_VERSION}-RELEASE.zip" || exit 1
+  unzip -q "ocmtoc-${MTOC_LATEST_VERSION}-RELEASE.zip" mtoc || exit 1
   sudo mkdir -p /usr/local/bin || exit 1
   sudo rm -f /usr/local/bin/mtoc /usr/local/bin/mtoc.NEW || exit 1
   sudo cp mtoc /usr/local/bin/mtoc || exit 1
   popd >/dev/null || exit 1
 
-  mtoc_path=$(which mtoc)
-  mtoc_hash_user=$(shasum -a 256 "${mtoc_path}" | cut -d' ' -f1)
-  if [ "${MTOC_HASH}" != "${mtoc_hash_user}" ]; then
+  mtoc_version=$(mtoc --version)
+  if [ "${mtoc_version}" != "${MTOC_LATEST_VERSION}" ]; then
     echo "Failed to install a compatible version of mtoc!"
-    echo "Expected SHA-256: ${MTOC_HASH}"
-    echo "Found SHA-256:    ${mtoc_hash_user}"
+    echo "Expected version: ${MTOC_LATEST_VERSION}"
+    echo "Found version:    ${mtoc_version}"
     exit 1
   fi
 fi
