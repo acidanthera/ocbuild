@@ -218,7 +218,7 @@ else
   valid_mtoc=true
 fi
 
-MTOC_LATEST_VERSION="1.0.0"
+MTOC_LATEST_VERSION="1.0.1"
 
 if [ "$(which mtoc)" != "" ]; then
   mtoc_version=$(mtoc --version)
