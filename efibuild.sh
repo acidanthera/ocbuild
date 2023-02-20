@@ -418,60 +418,57 @@ fi
 
 . ./edksetup.sh || exit 1
 
-if [ "$NEW_BUILDSYSTEM" != "1" ]; then
-  if [ "$SKIP_TESTS" != "1" ]; then
-    echo "Testing..."
-    if [ "$(unamer)" = "Windows" ]; then
-      # Configure Visual Studio environment. Requires:
-      # 1. choco install vswhere microsoft-build-tools visualcpp-build-tools nasm zip
-      # 2. iasl in PATH for MdeModulePkg
-      tools="${EDK_TOOLS_PATH}"
-      tools="${tools//\//\\}"
-      # For Travis CI
-      tools="${tools/\\c\\/C:\\}"
-      # For GitHub Actions
-      tools="${tools/\\d\\/D:\\}"
-      echo "Expanded EDK_TOOLS_PATH from ${EDK_TOOLS_PATH} to ${tools}"
-      export EDK_TOOLS_PATH="${tools}"
-      export BASE_TOOLS_PATH="${tools}"
-      VS2019_BUILDTOOLS=$(vswhere -latest -version '[16.0,17.1)' -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)
-      VS2019_BASEPREFIX="${VS2019_BUILDTOOLS}\\VC\\Tools\\MSVC\\"
-      # Intended to use ls here to get first entry.
-      # REF: https://github.com/koalaman/shellcheck/wiki/SC2012
-      # shellcheck disable=SC2012
-      cd "${VS2019_BASEPREFIX}" || exit 1
-      # Incorrect diagnostic due to action.
-      # REF: https://github.com/koalaman/shellcheck/wiki/SC2035
-      # shellcheck disable=SC2035
-      VS2019_DIR="$(find * -maxdepth 0 -type d -print -quit)"
-      if [ "${VS2019_DIR}" = "" ]; then
-        echo "No VS2019 MSVC compiler"
-        exit 1
-      fi
-      cd - || exit 1
-      export VS2019_PREFIX="${VS2019_BASEPREFIX}${VS2019_DIR}\\"
+if [ "$(unamer)" = "Windows" ]; then
+  # Configure Visual Studio environment. Requires:
+  # 1. choco install vswhere microsoft-build-tools visualcpp-build-tools nasm zip
+  # 2. iasl in PATH for MdeModulePkg
+  tools="${EDK_TOOLS_PATH}"
+  tools="${tools//\//\\}"
+  # For Travis CI
+  tools="${tools/\\c\\/C:\\}"
+  # For GitHub Actions
+  tools="${tools/\\d\\/D:\\}"
+  echo "Expanded EDK_TOOLS_PATH from ${EDK_TOOLS_PATH} to ${tools}"
+  export EDK_TOOLS_PATH="${tools}"
+  export BASE_TOOLS_PATH="${tools}"
+  VS2019_BUILDTOOLS=$(vswhere -latest -version '[16.0,17.5)' -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)
+  VS2019_BASEPREFIX="${VS2019_BUILDTOOLS}\\VC\\Tools\\MSVC\\"
+  # Intended to use ls here to get first entry.
+  # REF: https://github.com/koalaman/shellcheck/wiki/SC2012
+  # shellcheck disable=SC2012
+  cd "${VS2019_BASEPREFIX}" || exit 1
+  # Incorrect diagnostic due to action.
+  # REF: https://github.com/koalaman/shellcheck/wiki/SC2035
+  # shellcheck disable=SC2035
+  VS2019_DIR="$(find * -maxdepth 0 -type d -print -quit)"
+  if [ "${VS2019_DIR}" = "" ]; then
+    echo "No VS2019 MSVC compiler"
+    exit 1
+  fi
+  cd - || exit 1
+  export VS2019_PREFIX="${VS2019_BASEPREFIX}${VS2019_DIR}\\"
 
-      WINSDK_BASE="/c/Program Files (x86)/Windows Kits/10/bin"
-      if [ -d "${WINSDK_BASE}" ]; then
-        for dir in "${WINSDK_BASE}"/*/; do
-          if [ -f "${dir}x86/rc.exe" ]; then
-            WINSDK_PATH_FOR_RC_EXE="${dir}x86"
-            WINSDK_PATH_FOR_RC_EXE="${WINSDK_PATH_FOR_RC_EXE//\//\\}"
-            WINSDK_PATH_FOR_RC_EXE="${WINSDK_PATH_FOR_RC_EXE/\\c\\/C:\\}"
-            break
-          fi
-        done
+  WINSDK_BASE="/c/Program Files (x86)/Windows Kits/10/bin"
+  if [ -d "${WINSDK_BASE}" ]; then
+    for dir in "${WINSDK_BASE}"/*/; do
+      if [ -f "${dir}x86/rc.exe" ]; then
+        WINSDK_PATH_FOR_RC_EXE="${dir}x86"
+        WINSDK_PATH_FOR_RC_EXE="${WINSDK_PATH_FOR_RC_EXE//\//\\}"
+        WINSDK_PATH_FOR_RC_EXE="${WINSDK_PATH_FOR_RC_EXE/\\c\\/C:\\}"
+        break
       fi
-      if [ "${WINSDK_PATH_FOR_RC_EXE}" != "" ]; then
-        export WINSDK_PATH_FOR_RC_EXE
-      else
-        echo "Failed to find rc.exe"
-        exit 1
-      fi
-      BASE_TOOLS="$(pwd)/BaseTools"
-      export PATH="${BASE_TOOLS}/Bin/Win32:${BASE_TOOLS}/BinWrappers/WindowsLike:$PATH"
-      # Extract header paths for cl.exe to work.
-      eval "$(python -c '
+    done
+  fi
+  if [ "${WINSDK_PATH_FOR_RC_EXE}" != "" ]; then
+    export WINSDK_PATH_FOR_RC_EXE
+  else
+    echo "Failed to find rc.exe"
+    exit 1
+  fi
+  BASE_TOOLS="$(pwd)/BaseTools"
+  export PATH="${BASE_TOOLS}/Bin/Win32:${BASE_TOOLS}/BinWrappers/WindowsLike:$PATH"
+  # Extract header paths for cl.exe to work.
+  eval "$(python -c '
 import sys, os, subprocess
 import distutils.msvc9compiler as msvc
 msvc.find_vcvarsall=lambda _: sys.argv[1]
@@ -482,6 +479,12 @@ for k,v in envs.items():
     v = v.replace("'\''",r"'\'\\\'\''")
     print("export %(k)s='\''%(v)s'\''" % locals())
 ' "${VS2019_BUILDTOOLS}\\Common7\\Tools\\VsDevCmd.bat" '-arch=amd64')"
+fi
+
+if [ "$NEW_BUILDSYSTEM" != "1" ]; then
+  if [ "$SKIP_TESTS" != "1" ]; then
+    echo "Testing..."
+    if [ "$(unamer)" = "Windows" ]; then
       # Normal build similar to Unix.
       cd BaseTools || exit 1
       nmake        || exit 1
