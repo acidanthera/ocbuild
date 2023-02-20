@@ -305,9 +305,15 @@ if [ "${RTARGETS[*]}" = "" ]; then
   RTARGETS=('DEBUG' 'RELEASE')
 fi
 
-SKIP_TESTS=0
-SKIP_BUILD=0
-SKIP_PACKAGE=0
+if [ -z "${SKIP_TESTS}" ]; then
+  SKIP_TESTS=0
+fi
+if [ -z "${SKIP_BUILD}" ]; then
+  SKIP_BUILD=0
+fi
+if [ -z "${SKIP_PACKAGE}" ]; then
+  SKIP_PACKAGE=0
+fi
 MODE=""
 BUILD_ARGUMENTS=()
 
