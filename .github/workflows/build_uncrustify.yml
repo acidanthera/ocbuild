@@ -21,7 +21,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          python3 -m pip install gitpython requests pyyaml
+          python3 -m pip install -r requirements.txt
 
       - name: CI Bootstrap
         run: |
@@ -49,7 +49,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install cmake curl git
-          sudo python3 -m pip install gitpython requests pyyaml
+          sudo python3 -m pip install -r requirements.txt
 
       - name: CI Bootstrap
         run: |
@@ -79,7 +79,7 @@ jobs:
       - name: Install Dependencies
         run: |
           choco install cmake make --no-progress
-          python3 -m pip install gitpython requests pyyaml
+          python3 -m pip install -r requirements.txt
 
       - name: CI Bootstrap
         run: |
