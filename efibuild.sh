@@ -281,6 +281,10 @@ if [ -n "$RTARGETS" ] && [ "$(is_array RTARGETS)" = "0" ]; then
   IFS=', ' read -r -a RTARGETS <<< "$RTARGETS"
 fi
 
+if [ -n "$BUILD_ARGUMENTS" ] && [ "$(is_array BUILD_ARGUMENTS)" = "0" ]; then
+  IFS=', ' read -r -a BUILD_ARGUMENTS <<< "$BUILD_ARGUMENTS"
+fi
+
 if [ "${ARCHS[*]}" = "" ]; then
   ARCHS=('X64')
 fi
@@ -305,6 +309,10 @@ if [ "${RTARGETS[*]}" = "" ]; then
   RTARGETS=('DEBUG' 'RELEASE')
 fi
 
+if [ "${BUILD_ARGUMENTS[*]}" = "" ]; then
+  BUILD_ARGUMENTS=()
+fi
+
 if [ -z "${SKIP_TESTS}" ]; then
   SKIP_TESTS=0
 fi
@@ -314,8 +322,8 @@ fi
 if [ -z "${SKIP_PACKAGE}" ]; then
   SKIP_PACKAGE=0
 fi
+
 MODE=""
-BUILD_ARGUMENTS=()
 
 while true; do
   if [ "$1" == "--skip-tests" ]; then
