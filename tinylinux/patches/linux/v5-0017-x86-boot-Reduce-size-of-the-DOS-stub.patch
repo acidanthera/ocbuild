@@ -1,0 +1,76 @@
+From 1d76d75bd1acb272bb3d9aca06983a421985aa95 Mon Sep 17 00:00:00 2001
+Message-Id: <...>
+In-Reply-To: <...>
+References: <...>
+From: Evgeniy Baskov <...>
+To: Ard Biesheuvel <...>
+Cc: Borislav Petkov <...>
+Cc: Andy Lutomirski <...>
+Cc: Dave Hansen <...>
+Cc: Ingo Molnar <...>
+Cc: Peter Zijlstra <...>
+Cc: Thomas Gleixner <...>
+Cc: Alexey Khoroshilov <...>
+Cc: Peter Jones <...>
+Cc: "Limonciello, Mario" <...>
+Cc: joeyli <...>
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Date: Sun, 23 Oct 2022 20:04:15 +0300
+Subject: [PATCH v5 17/23] x86/boot: Reduce size of the DOS stub
+
+This is required to fit more sections in PE section tables,
+since its size is restricted by zero page located at specific offset
+after the PE header.
+
+Tested-by: Mario Limonciello <...>
+Signed-off-by: Evgeniy Baskov <...>
+---
+ arch/x86/boot/header.S | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
+index 9338c68e7413..9fec80bc504b 100644
+--- a/arch/x86/boot/header.S
++++ b/arch/x86/boot/header.S
+@@ -59,17 +59,16 @@ start2:
+ 	cld
+ 
+ 	movw	$bugger_off_msg, %si
++	movw	$bugger_off_msg_size, %cx
+ 
+ msg_loop:
+ 	lodsb
+-	andb	%al, %al
+-	jz	bs_die
+ 	movb	$0xe, %ah
+ 	movw	$7, %bx
+ 	int	$0x10
+-	jmp	msg_loop
++	decw	%cx
++	jnz	msg_loop
+ 
+-bs_die:
+ 	# Allow the user to press a key, then reboot
+ 	xorw	%ax, %ax
+ 	int	$0x16
+@@ -90,10 +89,9 @@ bs_die:
+ 
+ 	.section ".bsdata", "a"
+ bugger_off_msg:
+-	.ascii	"Use a boot loader.\r\n"
+-	.ascii	"\n"
+-	.ascii	"Remove disk and press any key to reboot...\r\n"
+-	.byte	0
++	.ascii	"Use a boot loader. "
++	.ascii	"Press a key to reboot"
++	.set	bugger_off_msg_size, . - bugger_off_msg
+ 
+ #ifdef CONFIG_EFI_STUB
+ pe_header:
+-- 
+2.39.2
+

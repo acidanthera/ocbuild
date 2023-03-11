@@ -1,0 +1,90 @@
+From d5d3fbfa1ec0c727d2a5efa360e1e73f57288863 Mon Sep 17 00:00:00 2001
+Message-Id: <...>
+In-Reply-To: <...>
+References: <...>
+From: Evgeniy Baskov <...>
+To: Ard Biesheuvel <...>
+Cc: Borislav Petkov <...>
+Cc: Andy Lutomirski <...>
+Cc: Dave Hansen <...>
+Cc: Ingo Molnar <...>
+Cc: Peter Zijlstra <...>
+Cc: Thomas Gleixner <...>
+Cc: Alexey Khoroshilov <...>
+Cc: Peter Jones <...>
+Cc: "Limonciello, Mario" <...>
+Cc: joeyli <...>
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Date: Thu, 9 Jun 2022 18:04:38 +0300
+Subject: [PATCH v5 02/23] x86/build: Remove RWX sections and align on 4KB
+
+Avoid creating sections simultaneously writable and readable
+to prepare for W^X implementation. Align sections on page size (4KB) to
+allow protecting them in the page tables.
+
+Split init code form ".init" segment into separate R_X ".inittext"
+segment and make ".init" segment non-executable.
+
+Also add these segments to x86_32 architecture for consistency.
+Currently paging is disabled in x86_32 in compressed kernel, so
+protection is not applied anyways, but .init code was incorrectly
+placed in non-executable ".data" segment. This should not change
+anything meaningful in memory layout now, but might be required in case
+memory protection will also be implemented in compressed kernel for
+x86_32.
+
+Tested-by: Mario Limonciello <...>
+Signed-off-by: Evgeniy Baskov <...>
+---
+ arch/x86/kernel/vmlinux.lds.S | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+index 25f155205770..81ea1236d293 100644
+--- a/arch/x86/kernel/vmlinux.lds.S
++++ b/arch/x86/kernel/vmlinux.lds.S
+@@ -102,12 +102,11 @@ jiffies = jiffies_64;
+ PHDRS {
+ 	text PT_LOAD FLAGS(5);          /* R_E */
+ 	data PT_LOAD FLAGS(6);          /* RW_ */
+-#ifdef CONFIG_X86_64
+-#ifdef CONFIG_SMP
++#if defined(CONFIG_X86_64) && defined(CONFIG_SMP)
+ 	percpu PT_LOAD FLAGS(6);        /* RW_ */
+ #endif
+-	init PT_LOAD FLAGS(7);          /* RWE */
+-#endif
++	inittext PT_LOAD FLAGS(5);      /* R_E */
++	init PT_LOAD FLAGS(6);          /* RW_ */
+ 	note PT_NOTE FLAGS(0);          /* ___ */
+ }
+ 
+@@ -226,9 +225,10 @@ SECTIONS
+ #endif
+ 
+ 	INIT_TEXT_SECTION(PAGE_SIZE)
+-#ifdef CONFIG_X86_64
+-	:init
+-#endif
++	:inittext
++
++	. = ALIGN(PAGE_SIZE);
++
+ 
+ 	/*
+ 	 * Section for code used exclusively before alternatives are run. All
+@@ -240,6 +240,7 @@ SECTIONS
+ 	.altinstr_aux : AT(ADDR(.altinstr_aux) - LOAD_OFFSET) {
+ 		*(.altinstr_aux)
+ 	}
++	:init
+ 
+ 	INIT_DATA_SECTION(16)
+ 
+-- 
+2.39.2
+

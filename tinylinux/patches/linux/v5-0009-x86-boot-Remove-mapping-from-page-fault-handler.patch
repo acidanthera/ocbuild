@@ -1,0 +1,80 @@
+From 0d68287de4cd4701db28bb5b763c54895641f395 Mon Sep 17 00:00:00 2001
+Message-Id: <...>
+In-Reply-To: <...>
+References: <...>
+From: Evgeniy Baskov <...>
+To: Ard Biesheuvel <...>
+Cc: Borislav Petkov <...>
+Cc: Andy Lutomirski <...>
+Cc: Dave Hansen <...>
+Cc: Ingo Molnar <...>
+Cc: Peter Zijlstra <...>
+Cc: Thomas Gleixner <...>
+Cc: Alexey Khoroshilov <...>
+Cc: Peter Jones <...>
+Cc: "Limonciello, Mario" <...>
+Cc: joeyli <...>
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Date: Thu, 9 Jun 2022 19:35:18 +0300
+Subject: [PATCH v5 09/23] x86/boot: Remove mapping from page fault handler
+
+After every implicit mapping is removed, this code is no longer needed.
+
+Remove memory mapping from page fault handler to ensure that there are
+no hidden invalid memory accesses.
+
+Tested-by: Mario Limonciello <...>
+Signed-off-by: Evgeniy Baskov <...>
+---
+ arch/x86/boot/compressed/ident_map_64.c | 26 ++++++++++---------------
+ 1 file changed, 10 insertions(+), 16 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/ident_map_64.c b/arch/x86/boot/compressed/ident_map_64.c
+index eb28ce9812c5..378f99b1d7e8 100644
+--- a/arch/x86/boot/compressed/ident_map_64.c
++++ b/arch/x86/boot/compressed/ident_map_64.c
+@@ -393,27 +393,21 @@ void do_boot_page_fault(struct pt_regs *regs, unsigned long error_code)
+ {
+ 	unsigned long address = native_read_cr2();
+ 	unsigned long end;
+-	bool ghcb_fault;
++	char *msg;
+ 
+-	ghcb_fault = sev_es_check_ghcb_fault(address);
++	if (sev_es_check_ghcb_fault(address))
++		msg = "Page-fault on GHCB page:";
++	else
++		msg = "Unexpected page-fault:";
+ 
+ 	address   &= PMD_MASK;
+ 	end        = address + PMD_SIZE;
+ 
+ 	/*
+-	 * Check for unexpected error codes. Unexpected are:
+-	 *	- Faults on present pages
+-	 *	- User faults
+-	 *	- Reserved bits set
+-	 */
+-	if (error_code & (X86_PF_PROT | X86_PF_USER | X86_PF_RSVD))
+-		do_pf_error("Unexpected page-fault:", error_code, address, regs->ip);
+-	else if (ghcb_fault)
+-		do_pf_error("Page-fault on GHCB page:", error_code, address, regs->ip);
+-
+-	/*
+-	 * Error code is sane - now identity map the 2M region around
+-	 * the faulting address.
++	 * Since all memory allocations are made explicit
++	 * now, every page fault at this stage is an
++	 * error and the error handler is there only
++	 * for debug purposes.
+ 	 */
+-	kernel_add_identity_map(address, end, MAP_WRITE);
++	do_pf_error(msg, error_code, address, regs->ip);
+ }
+-- 
+2.39.2
+
