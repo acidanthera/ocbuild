@@ -1,0 +1,61 @@
+From 45fc736c825b91047d1abe9e47ece762ef4ccd7f Mon Sep 17 00:00:00 2001
+Message-Id: <...>
+In-Reply-To: <...>
+References: <...>
+From: Evgeniy Baskov <...>
+To: Ard Biesheuvel <...>
+Cc: Borislav Petkov <...>
+Cc: Andy Lutomirski <...>
+Cc: Dave Hansen <...>
+Cc: Ingo Molnar <...>
+Cc: Peter Zijlstra <...>
+Cc: Thomas Gleixner <...>
+Cc: Alexey Khoroshilov <...>
+Cc: Peter Jones <...>
+Cc: "Limonciello, Mario" <...>
+Cc: joeyli <...>
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Date: Mon, 24 Oct 2022 08:55:59 +0300
+Subject: [PATCH v5 07/23] x86/build: Check W^X of vmlinux during build
+
+Check if there are simultaneously writable and executable
+program segments in vmlinux ELF image and fail build if there are any.
+
+This would prevent accidental introduction of RWX segments.
+
+Tested-by: Mario Limonciello <...>
+Signed-off-by: Evgeniy Baskov <...>
+---
+ arch/x86/boot/compressed/Makefile | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index 6b6cfe607bdb..0c6e25279ec1 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -112,12 +112,17 @@ vmlinux-objs-$(CONFIG_EFI) += $(obj)/efi.o
+ vmlinux-objs-$(CONFIG_EFI_MIXED) += $(obj)/efi_mixed.o
+ vmlinux-objs-$(CONFIG_EFI_STUB) += $(objtree)/drivers/firmware/efi/libstub/lib.a
+ 
++quiet_cmd_objcopy_and_wx_check = $(quiet_cmd_objcopy)
++cmd_objcopy_and_wx_check = if $(OBJDUMP) -p $< | grep "flags .wx" > /dev/null; then \
++				   (echo >&2 "$<: Simultaneously writable and executable sections are prohibited"; \
++				    /bin/false); else $(cmd_objcopy); fi
++
+ $(obj)/vmlinux: $(vmlinux-objs-y) FORCE
+ 	$(call if_changed,ld)
+ 
+ OBJCOPYFLAGS_vmlinux.bin :=  -R .comment -S
+ $(obj)/vmlinux.bin: vmlinux FORCE
+-	$(call if_changed,objcopy)
++	$(call if_changed,objcopy_and_wx_check)
+ 
+ targets += $(patsubst $(obj)/%,%,$(vmlinux-objs-y)) vmlinux.bin.all vmlinux.relocs
+ 
+-- 
+2.39.2
+

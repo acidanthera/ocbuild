@@ -1,0 +1,117 @@
+From d9b93baf0cb43ab3a4ecbafe334a32a456c3adbb Mon Sep 17 00:00:00 2001
+Message-Id: <...>
+In-Reply-To: <...>
+References: <...>
+From: Evgeniy Baskov <...>
+To: Ard Biesheuvel <...>
+Cc: Borislav Petkov <...>
+Cc: Andy Lutomirski <...>
+Cc: Dave Hansen <...>
+Cc: Ingo Molnar <...>
+Cc: Peter Zijlstra <...>
+Cc: Thomas Gleixner <...>
+Cc: Alexey Khoroshilov <...>
+Cc: Peter Jones <...>
+Cc: "Limonciello, Mario" <...>
+Cc: joeyli <...>
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Date: Sun, 23 Oct 2022 20:15:52 +0300
+Subject: [PATCH v5 21/23] efi/x86: Explicitly set sections memory attributes
+
+Explicitly change sections memory attributes in efi_pe_entry in case
+of incorrect EFI implementations and to reduce access rights to
+compressed kernel blob. By default it is set executable due to
+restriction in maximum number of sections that can fit before zero
+page.
+
+Signed-off-by: Evgeniy Baskov <...>
+---
+ drivers/firmware/efi/libstub/x86-stub.c | 54 +++++++++++++++++++++++++
+ 1 file changed, 54 insertions(+)
+
+diff --git a/drivers/firmware/efi/libstub/x86-stub.c b/drivers/firmware/efi/libstub/x86-stub.c
+index 1f0a2e7075c3..60697fcd8950 100644
+--- a/drivers/firmware/efi/libstub/x86-stub.c
++++ b/drivers/firmware/efi/libstub/x86-stub.c
+@@ -27,6 +27,12 @@ const efi_dxe_services_table_t *efi_dxe_table;
+ u32 image_offset __section(".data");
+ static efi_loaded_image_t *image __section(".data");
+ 
++extern char _head[], _ehead[];
++extern char _compressed[], _ecompressed[];
++extern char _text[], _etext[];
++extern char _rodata[], _erodata[];
++extern char _data[];
++
+ static efi_status_t
+ preserve_pci_rom_image(efi_pci_io_protocol_t *pci, struct pci_setup_rom **__rom)
+ {
+@@ -343,6 +349,52 @@ void __noreturn efi_exit(efi_handle_t handle, efi_status_t status)
+ 		asm("hlt");
+ }
+ 
++
++/*
++ * Manually setup memory protection attributes for each ELF section
++ * since we cannot do it properly by using PE sections.
++ */
++static void setup_sections_memory_protection(unsigned long image_base)
++{
++#ifdef CONFIG_EFI_DXE_MEM_ATTRIBUTES
++	efi_dxe_table = get_efi_config_table(EFI_DXE_SERVICES_TABLE_GUID);
++
++	if (!efi_dxe_table ||
++	    efi_dxe_table->hdr.signature != EFI_DXE_SERVICES_TABLE_SIGNATURE) {
++		efi_warn("Unable to locate EFI DXE services table\n");
++		efi_dxe_table = NULL;
++		return;
++	}
++
++	/* .setup [image_base, _head] */
++	efi_adjust_memory_range_protection(image_base,
++					   (unsigned long)_head - image_base,
++					   EFI_MEMORY_RO | EFI_MEMORY_XP);
++	/* .head.text [_head, _ehead] */
++	efi_adjust_memory_range_protection((unsigned long)_head,
++					   (unsigned long)_ehead - (unsigned long)_head,
++					   EFI_MEMORY_RO);
++	/* .rodata..compressed [_compressed, _ecompressed] */
++	efi_adjust_memory_range_protection((unsigned long)_compressed,
++					   (unsigned long)_ecompressed - (unsigned long)_compressed,
++					   EFI_MEMORY_RO | EFI_MEMORY_XP);
++	/* .text [_text, _etext] */
++	efi_adjust_memory_range_protection((unsigned long)_text,
++					   (unsigned long)_etext - (unsigned long)_text,
++					   EFI_MEMORY_RO);
++	/* .rodata [_rodata, _erodata] */
++	efi_adjust_memory_range_protection((unsigned long)_rodata,
++					   (unsigned long)_erodata - (unsigned long)_rodata,
++					   EFI_MEMORY_RO | EFI_MEMORY_XP);
++	/* .data, .bss [_data, _end] */
++	efi_adjust_memory_range_protection((unsigned long)_data,
++					   (unsigned long)_end - (unsigned long)_data,
++					   EFI_MEMORY_XP);
++#else
++	(void)image_base;
++#endif
++}
++
+ void __noreturn efi_stub_entry(efi_handle_t handle,
+ 			       efi_system_table_t *sys_table_arg,
+ 			       struct boot_params *boot_params);
+@@ -687,6 +739,8 @@ asmlinkage unsigned long efi_main(efi_handle_t handle,
+ 		efi_dxe_table = NULL;
+ 	}
+ 
++	setup_sections_memory_protection(bzimage_addr - image_offset);
++
+ #ifdef CONFIG_CMDLINE_BOOL
+ 	status = efi_parse_options(CONFIG_CMDLINE);
+ 	if (status != EFI_SUCCESS) {
+-- 
+2.39.2
+
