@@ -15,7 +15,7 @@ fi
 
 is_array()
 {
-    # Detects if argument is an array, returns 1 on sucess, 0 otherwise
+    # Detects if argument is an array, returns 1 on success, 0 otherwise
     [ -z "$1" ] && echo 0
     if [ -n "$BASH" ]; then
       declare -p "${1}" 2> /dev/null | grep 'declare \-a' >/dev/null && echo 1
