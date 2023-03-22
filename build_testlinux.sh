@@ -3,11 +3,23 @@
 WORKDIR="$(pwd)"/tinylinux
 SRCDIR="$WORKDIR"/src
 
-if [ -z "${CROSS_COMPILE}" ]; then
+if [ -z "${CROSS_COMPILE_ARM}" ]; then
+    CROSS_COMPILE_ARM="arm-linux-gnueabi-"
+fi
+
+if [ -z "${CROSS_COMPILE_X86}" ]; then
   if [ "$(uname -m)" = "x86_64" ]; then
-    CROSS_COMPILE=""
+    CROSS_COMPILE_X86=""
   else
-    CROSS_COMPILE=x86_64-linux-gnu-
+    CROSS_COMPILE_X86=x86_64-linux-gnu-
+  fi
+fi
+
+if [ -z "${CROSS_COMPILE_ARM64}" ]; then
+  if [ "$(uname -m)" = "x86_64" ]; then
+    CROSS_COMPILE_ARM64="aarch64-linux-gnu-"
+  else
+    CROSS_COMPILE_ARM64=""
   fi
 fi
 
@@ -20,7 +32,7 @@ if [ -z "${LINUX_REPO_URL}" ]; then
 fi
 
 if [ -z "${BUSYBOX_VERSION}" ]; then
-  BUSYBOX_VERSION=1.35.0
+  BUSYBOX_VERSION=1.36.0
 fi
 
 GIT_COMMITER_EMAIL=unknown@unknown.com
@@ -40,6 +52,7 @@ xfatal() {
 usage() {
   echo "This script builds 32-bit and 64-bit tiny linux images with efistub"
   echo "and creates a TestLinux package located at external/TestLinux.zip."
+  echo "Currenty supported HOST arches is x86_64 and aarch64"
   echo ""
   echo "The following arguments are accepted:"
   echo " --build-initrd build initrd.cpio.gz"
@@ -50,18 +63,23 @@ usage() {
   echo " LINUX_KERNEL_TAG    Linux kernel git repo tag to clone"
   echo " LINUX_REPO_URL      Linux kernel git repo url"
   echo " BUSYBOX_VERSION     The version of busybox tarball"
-  echo " CROSS_COMPILE       Specify cross toolchain prefix, for ex. x86_64-linux-gnu-"
+  echo " CROSS_COMPILE_X86   Specify cross toolchain prefix for X86 targets, for ex. x86_64-linux-gnu-"
+  echo " CROSS_COMPILE_ARM   Specify cross toolchain prefix for ARM 32-bit targets, for ex. arm-linux-gnueabi-"
+  echo " CROSS_COMPILE_ARM64 Specify cross toolchain prefix for ARM 64-bit targets, for ex. aarch64-linux-gnu-"
   echo ""
   echo "Note 1: when just building linux you must ensure that you placed a correct initrd.cpio.gz "
   echo "      into tinylinux folder"
   echo "Note 2: when cross-compiling don't forget to install required packages, for Debian:
               libc6-dev-i386-amd64-cross
               gcc-x86-64-linux-gnu
+              lib32gcc-GCC_VERSION-dev-amd64-cross
               build-essential"
 }
 
 generate_initrd()
 {
+  local arch=$1
+  local cross_compile=$2
   # Remove the initrd directory if exists
   if [ -d "$WORKDIR"/initrd ]; then
     rm -r "$WORKDIR"/initrd || xfatal "Error removing initrd directory!"
@@ -87,18 +105,24 @@ generate_initrd()
 
   # Build 32-bit busybox and install its binaries into rootfs
   yes "" | make \
-          CROSS_COMPILE="$CROSS_COMPILE" \
+          ARCH="$arch" \
+          CROSS_COMPILE="$cross_compile" \
           -C "$SRCDIR"/busybox-"$BUSYBOX_VERSION"/ \
           defconfig || xfatal "Generating the busybox default config failed!"
 
   sed -i.orig 's/^#.*CONFIG_STATIC.*/CONFIG_STATIC=y/' "$SRCDIR"/busybox-"$BUSYBOX_VERSION"/.config
 
   make \
-    CROSS_COMPILE="$CROSS_COMPILE" \
+    ARCH="$arch" \
+    CROSS_COMPILE="$cross_compile" \
     -C "$SRCDIR"/busybox-"$BUSYBOX_VERSION"/ \
     clean || xfatal "Cleaning busybox build aftifacts failed"
 
-  CPPFLAGS=-m32 LDFLAGS="-m32 --static" make -j"$(nproc)" CROSS_COMPILE="$CROSS_COMPILE" -C "$SRCDIR"/busybox-"$BUSYBOX_VERSION"/ install CONFIG_PREFIX="$WORKDIR"/initrd || xfatal "Busybox installation failed!"
+  if [ "$arch" = "x86" ]; then
+    CPPFLAGS=-m32 LDFLAGS="-m32 --static" make -j"$(nproc)" ARCH="$arch" CROSS_COMPILE="$cross_compile" -C "$SRCDIR"/busybox-"$BUSYBOX_VERSION"/ install CONFIG_PREFIX="$WORKDIR"/initrd || xfatal "Busybox installation failed!"
+  elif [ "$arch" = "arm" ]; then
+    CPPFLAGS=-mbe32 LDFLAGS="-mbe32 --static" make -j"$(nproc)" ARCH="$arch" CROSS_COMPILE="$cross_compile" -C "$SRCDIR"/busybox-"$BUSYBOX_VERSION"/ install CONFIG_PREFIX="$WORKDIR"/initrd || xfatal "Busybox installation failed!"
+  fi
 
   # Creating the bin dev proc and sys directories
   mkdir -p "$WORKDIR"/initrd/bin \
@@ -127,12 +151,13 @@ EOT
   ln -s ./bin/init init
 
   # Creating the initrd.cpio.gz
-  fakeroot bash -c "chown -R root:root ""$WORKDIR""/initrd; mknod -m 666 ""$WORKDIR""/initrd/dev/console c 5 1; find . | cpio -o -H newc | gzip -9 > ""$WORKDIR""/initrd.cpio.gz" || xfatal "Generating initrd.cpio.gz failed!"
+  fakeroot bash -c "chown -R root:root ""$WORKDIR""/initrd; mknod -m 666 ""$WORKDIR""/initrd/dev/console c 5 1; find . | cpio -o -H newc | gzip -9 > ""$WORKDIR""/initrd_""$arch"".cpio.gz" || xfatal "Generating initrd.cpio.gz failed!"
   popd >/dev/null || exit 1
 }
 
 build_linux_image() {
   local arch=$1
+  local cross_compile=$2
   if [ ! -d "$SRCDIR"/linux ]; then
     # Clone Linux source tree
     git clone --depth 1 --branch \
@@ -151,27 +176,62 @@ build_linux_image() {
 
     popd >/dev/null || exit 1
   fi
-  # Copy initrd
-  cp "$WORKDIR"/initrd.cpio.gz "$SRCDIR"/linux || xfatal "Copying initrd.cpio.gz failed, missing initrd?"
+
   # Prepare config
   if [ "$arch" = "X64" ]; then
     cp "$WORKDIR"/tiny_kernel_x86-64.config "$SRCDIR"/linux/.config || exit 1
   elif [ "$arch" = "IA32" ]; then
     cp "$WORKDIR"/tiny_kernel_x86.config "$SRCDIR"/linux/.config || exit 1
+  elif [ "$arch" = "ARM" ]; then
+    cp "$WORKDIR"/tiny_kernel_arm.config "$SRCDIR"/linux/.config || exit 1
+  elif [ "$arch" = "AARCH64" ]; then
+    cp "$WORKDIR"/tiny_kernel_arm64.config "$SRCDIR"/linux/.config || exit 1
   else
     xfatal "Unsupported arch!"
   fi
-  # Update config
-  yes "" | make \
-            ARCH=x86 \
-            CROSS_COMPILE="$CROSS_COMPILE" \
-            -C "$SRCDIR"/linux/ \
-            oldconfig || xfatal "Updating kernel config failed!"
-  # Build linux kernel
-  make ARCH=x86 CROSS_COMPILE="$CROSS_COMPILE" -C "$SRCDIR"/linux clean || xfatal "Cleaning linux build aftifacts failed"
-  make ARCH=x86 CROSS_COMPILE="$CROSS_COMPILE" -C "$SRCDIR"/linux -j"$(nproc)" || xfatal "Linux kernel compilation failed!"
-  # Copy resulting kernel
-  cp "$SRCDIR"/linux/arch/x86/boot/bzImage "$WORKDIR"/build/EFI/BOOT/BOOT"$arch".efi || exit 1
+  if [ "$arch" = "X64" ] || [ "$arch" = "IA32" ]; then
+    # Copy initrd
+    cp "$WORKDIR"/initrd_i386.cpio.gz "$SRCDIR"/linux || xfatal "Copying initrd_i386.cpio.gz failed, missing initrd?"
+    # Update config
+    yes "" | make \
+              ARCH=x86 \
+              CROSS_COMPILE="$cross_compile" \
+              -C "$SRCDIR"/linux/ \
+              oldconfig || xfatal "Updating kernel config failed!"
+    # Build linux kernel
+    make ARCH=x86 CROSS_COMPILE="$cross_compile" -C "$SRCDIR"/linux clean || xfatal "Cleaning linux build aftifacts failed"
+    make ARCH=x86 CROSS_COMPILE="$cross_compile" -C "$SRCDIR"/linux -j"$(nproc)" || xfatal "Linux kernel compilation failed!"
+    # Copy resulting kernel
+    cp "$SRCDIR"/linux/arch/x86/boot/bzImage "$WORKDIR"/build/EFI/BOOT/BOOT"$arch".efi || exit 1
+  elif [ "$arch" = "ARM" ]; then
+    # Copy initrd
+    cp "$WORKDIR"/initrd_arm.cpio.gz "$SRCDIR"/linux || xfatal "Copying initrd_arm.cpio.gz failed, missing initrd?"
+    # Update config
+    yes "" | make \
+              ARCH=arm \
+              CROSS_COMPILE="$cross_compile" \
+              -C "$SRCDIR"/linux/ \
+              oldconfig || xfatal "Updating kernel config failed!"
+    # Build linux kernel
+    make ARCH=arm CROSS_COMPILE="$cross_compile" -C "$SRCDIR"/linux clean || xfatal "Cleaning linux build aftifacts failed"
+    make ARCH=arm CROSS_COMPILE="$cross_compile" -C "$SRCDIR"/linux -j"$(nproc)" || xfatal "Linux kernel compilation failed!"
+    # Copy resulting kernel
+    cp "$SRCDIR"/linux/arch/arm/boot/zImage "$WORKDIR"/build/EFI/BOOT/BOOT"$arch".efi || exit 1
+  elif [ "$arch" = "AARCH64" ]; then
+    # Copy initrd
+    cp "$WORKDIR"/initrd_arm.cpio.gz "$SRCDIR"/linux || xfatal "Copying initrd_arm.cpio.gz failed, missing initrd?"
+    # Update config
+    yes "" | make \
+              ARCH=arm64 \
+              CROSS_COMPILE="$cross_compile" \
+              -C "$SRCDIR"/linux/ \
+              oldconfig || xfatal "Updating kernel config failed!"
+    # Build linux kernel
+    make ARCH=arm64 CROSS_COMPILE="$cross_compile" -C "$SRCDIR"/linux clean || xfatal "Cleaning linux build aftifacts failed"
+    make ARCH=arm64 CROSS_COMPILE="$cross_compile" -C "$SRCDIR"/linux -j"$(nproc)" || xfatal "Linux kernel compilation failed!"
+    # Copy resulting kernel
+    cp "$SRCDIR"/linux/arch/arm64/boot/vmlinuz.efi "$WORKDIR"/build/EFI/BOOT/BOOTAA64.efi || exit 1
+  fi
 }
 
 if [ "$(uname)" != "Linux" ]; then
@@ -229,20 +289,42 @@ if [ "$(which xz)" = "" ]; then
   xfatal "flex should be available!"
 fi
 
+if [ "$(which cpio)" = "" ]; then
+  xfatal "cpio should be available!"
+fi
+
+if [ "$(which bc)" = "" ]; then
+  xfatal "bc should be available!"
+fi
+
+if [ "$(which bison)" = "" ]; then
+  xfatal "bison should be available!"
+fi
+
+if [ "$(which zip)" = "" ]; then
+  xfatal "zip should be available!"
+fi
+
 mkdir -p "$SRCDIR"
 mkdir -p "$WORKDIR"/build/EFI/BOOT
 
 if $BUILD_INITRD; then
-  xecho "Creating initrd.cpio.gz"
-  generate_initrd || xfatal "Error while generating initrd!"
+  xecho "Creating x86 initrd_i386.cpio.gz"
+  generate_initrd "i386" "$CROSS_COMPILE_X86" || xfatal "Error while generating initrd!"
+  xecho "Creating arm initrd_arm.cpio.gz"
+  generate_initrd "arm" "$CROSS_COMPILE_ARM" || xfatal "Error while generating initrd!"
   xecho "Done!"
 fi
 
 if $BUILD_LINUX; then
   xecho "Building Linux image x86_64"
-  build_linux_image "X64" || xfatal "Error while building 64-bit Linux image!"
+  build_linux_image "X64" "$CROSS_COMPILE_X86" || xfatal "Error while building 64-bit Linux image!"
   xecho "Building Linux image x86"
-  build_linux_image "IA32" || xfatal "Error while building 32-bit Linux image!"
+  build_linux_image "IA32" "$CROSS_COMPILE_X86" || xfatal "Error while building 32-bit Linux image!"
+  xecho "Build Linux image ARM 32-bit"
+  build_linux_image "ARM" "$CROSS_COMPILE_ARM" || xfatal "Error while building ARM 32-bit Linux image!"
+  xecho "Build Linux image ARM 64-bit"
+  build_linux_image "AARCH64" "$CROSS_COMPILE_ARM64" || xfatal "Error while building ARM 64-bit Linux image!"
   # Zipping TestLinux.zip
   pushd "$WORKDIR"/build >/dev/null || exit 1
   rm ../../external/TestLinux.zip
