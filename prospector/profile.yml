@@ -9,6 +9,7 @@ pylint:
     - broad-except
     - line-too-long
     - too-many-public-methods
+    - too-many-statements
     - invalid-name
     - too-many-arguments
     - too-many-locals
