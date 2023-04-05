@@ -10,9 +10,10 @@ import logging
 
 import pexpect
 
-TEST_LINUX_PATH = "./TestLinux"
-TEST_WINPE_PATH = "./winpe.iso"
-TESTCONSOLE_PATH = "./TestConsole"
+OCBUILD_PATH = os.path.dirname(os.path.realpath(__file__))
+TEST_LINUX_PATH = f"{OCBUILD_PATH}/TestLinux"
+TEST_WINPE_PATH = f"{OCBUILD_PATH}/winpe.iso"
+TESTCONSOLE_PATH = f"{OCBUILD_PATH}/TestConsole"
 
 
 def get_qemu_version() -> tuple:
@@ -100,7 +101,7 @@ def prepare_test_console(esp_path: str) -> bool:
         # Unpack TestConsole
         print("Preparing ESP with TestConsole")
         try:
-            with zipfile.ZipFile('./external/TestConsole.zip', 'r') as zip_ref:
+            with zipfile.ZipFile(f'{OCBUILD_PATH}/external/TestConsole.zip', 'r') as zip_ref:
                 zip_ref.extractall(esp_path)
         except Exception as e:
             logging.error("%s", e)
@@ -120,7 +121,7 @@ def prepare_test_linux_image(esp_path: str) -> bool:
         # Unpack TestLinux
         print("Preparing ESP with TestLinux")
         try:
-            with zipfile.ZipFile('./external/TestLinux.zip', 'r') as zip_ref:
+            with zipfile.ZipFile(f'{OCBUILD_PATH}/external/TestLinux.zip', 'r') as zip_ref:
                 zip_ref.extractall(esp_path)
         except Exception as e:
             logging.error("%s", e)
