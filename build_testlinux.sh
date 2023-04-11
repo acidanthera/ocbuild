@@ -118,7 +118,7 @@ generate_initrd()
     -C "$SRCDIR"/busybox-"$BUSYBOX_VERSION"/ \
     clean || xfatal "Cleaning busybox build aftifacts failed"
 
-  if [ "$arch" = "x86" ]; then
+  if [ "$arch" = "i386" ]; then
     CPPFLAGS=-m32 LDFLAGS="-m32 --static" make -j"$(nproc)" ARCH="$arch" CROSS_COMPILE="$cross_compile" -C "$SRCDIR"/busybox-"$BUSYBOX_VERSION"/ install CONFIG_PREFIX="$WORKDIR"/initrd || xfatal "Busybox installation failed!"
   elif [ "$arch" = "arm" ]; then
     CPPFLAGS=-mbe32 LDFLAGS="-mbe32 --static" make -j"$(nproc)" ARCH="$arch" CROSS_COMPILE="$cross_compile" -C "$SRCDIR"/busybox-"$BUSYBOX_VERSION"/ install CONFIG_PREFIX="$WORKDIR"/initrd || xfatal "Busybox installation failed!"
