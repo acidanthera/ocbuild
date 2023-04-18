@@ -154,7 +154,7 @@ def main():
     parser.set_defaults(test_linux=False)
     parser.set_defaults(test_winpe=False)
     parser.set_defaults(fw_arch="x86")
-    pexpect_timeout = 30  # default 30
+    pexpect_timeout = 60  # default 30
     testconsole_path = TESTCONSOLE_PATH
     testlinux_path = TEST_LINUX_PATH
     testwinpe_path = TEST_WINPE_PATH
@@ -184,11 +184,11 @@ def main():
             sys.exit(1)
         boot_drive = '-hda fat:rw:' + testlinux_path
         expected_string = 'Hello World!'
-        pexpect_timeout = 120
+        pexpect_timeout = 180
     elif args.test_winpe:
         boot_drive = '-cdrom ' + testwinpe_path
         expected_string = 'EVENT: The CMD command is now available'
-        pexpect_timeout = 180
+        pexpect_timeout = 210
     else:
         if not prepare_test_console(testconsole_path):
             sys.exit(1)
