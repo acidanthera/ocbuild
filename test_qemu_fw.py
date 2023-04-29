@@ -7,6 +7,8 @@ import re
 import sys
 import zipfile
 import logging
+import tempfile
+import shutil
 
 import pexpect
 
@@ -179,26 +181,32 @@ def main():
     elif args.user_testwinpe_path is not None:
         testwinpe_path = args.user_testwinpe_path
 
-    if args.test_linux:
-        if not prepare_test_linux_image(testlinux_path):
+    # Use a temporary directory for the ESP to combat NvVars mixing and QEMU
+    # host directory corruption.
+    with tempfile.TemporaryDirectory() as temp_dir:
+        esp_dir = os.path.join(temp_dir, 'ESP')
+        boot_drive = '-hda fat:rw:' + esp_dir
+        if args.test_linux:
+            if not prepare_test_linux_image(testlinux_path):
+                sys.exit(1)
+            shutil.copytree(testlinux_path, esp_dir)
+            expected_string = 'Hello World!'
+            pexpect_timeout = 180
+        elif args.test_winpe:
+            os.makedirs(esp_dir)
+            boot_drive += ' -cdrom ' + testwinpe_path
+            expected_string = 'EVENT: The CMD command is now available'
+            pexpect_timeout = 210
+        else:
+            if not prepare_test_console(testconsole_path):
+                sys.exit(1)
+            shutil.copytree(testconsole_path, esp_dir)
+            expected_string = 'GPT entry is not accessible'
+        print("Testing ...")
+        if test_firmware(args.fw_path, boot_drive, expected_string, pexpect_timeout, args.rdrand, fw_arch):
+            sys.exit(0)
+        else:
             sys.exit(1)
-        boot_drive = '-hda fat:rw:' + testlinux_path
-        expected_string = 'Hello World!'
-        pexpect_timeout = 180
-    elif args.test_winpe:
-        boot_drive = '-cdrom ' + testwinpe_path
-        expected_string = 'EVENT: The CMD command is now available'
-        pexpect_timeout = 210
-    else:
-        if not prepare_test_console(testconsole_path):
-            sys.exit(1)
-        boot_drive = '-hda fat:rw:' + testconsole_path
-        expected_string = 'GPT entry is not accessible'
-    print("Testing ...")
-    if test_firmware(args.fw_path, boot_drive, expected_string, pexpect_timeout, args.rdrand, fw_arch):
-        sys.exit(0)
-    else:
-        sys.exit(1)
 
 
 if __name__ == '__main__':
