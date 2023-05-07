@@ -124,10 +124,6 @@ cov-configure --clang || ret=$?
 if [ $ret -ne 0 ]; then
   abort "Coverity configure for clang failed with code ${ret}"
 fi
-cov-configure --swift || ret=$?
-if [ $ret -ne 0 ]; then
-  abort "Coverity configure for swift failed with code ${ret}"
-fi
 # shellcheck disable=SC2086
 cov-build --dir "${COVERITY_RESULTS_DIR}" ${COVERITY_BUILD_COMMAND} || ret=$?
 if [ $ret -ne 0 ]; then
