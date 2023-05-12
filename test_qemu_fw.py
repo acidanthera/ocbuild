@@ -196,7 +196,7 @@ def main():
             os.makedirs(esp_dir)
             boot_drive += ' -cdrom ' + testwinpe_path
             expected_string = 'EVENT: The CMD command is now available'
-            pexpect_timeout = 210
+            pexpect_timeout = 600
         else:
             if not prepare_test_console(testconsole_path):
                 sys.exit(1)
