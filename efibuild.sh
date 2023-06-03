@@ -439,7 +439,7 @@ if [ "$(unamer)" = "Windows" ]; then
   echo "Expanded EDK_TOOLS_PATH from ${EDK_TOOLS_PATH} to ${tools}"
   export EDK_TOOLS_PATH="${tools}"
   export BASE_TOOLS_PATH="${tools}"
-  VS2019_BUILDTOOLS=$(vswhere -latest -version '[16.0,17.6)' -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)
+  VS2019_BUILDTOOLS=$(vswhere -latest -version '[16.0,18.0)' -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)
   VS2019_BASEPREFIX="${VS2019_BUILDTOOLS}\\VC\\Tools\\MSVC\\"
   # Intended to use ls here to get first entry.
   # REF: https://github.com/koalaman/shellcheck/wiki/SC2012
