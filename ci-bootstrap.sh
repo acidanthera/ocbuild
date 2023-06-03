@@ -108,3 +108,8 @@ else
   colored_text "gcc version"
   gcc --version
 fi
+
+if [ "$(unamer)" = "Windows" ]; then
+  colored_text "VS latest version"
+  echo $(vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property catalog_productSemanticVersion)
+fi
