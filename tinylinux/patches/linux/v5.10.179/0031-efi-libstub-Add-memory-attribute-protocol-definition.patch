@@ -1,0 +1,88 @@
+From cbc09cd49d4504073bdaa007792a206125928d44 Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Evgeniy Baskov <>
+Date: Thu, 11 May 2023 18:16:47 +0300
+Subject: [PATCH 31/39] efi/libstub: Add memory attribute protocol definitions
+
+EFI_MEMORY_ATTRIBUTE_PROTOCOL servers as a better alternative to
+DXE services for setting memory attributes in EFI Boot Services
+environment. This protocol is better since it is a part of UEFI
+specification itself and not UEFI PI specification like DXE
+services.
+
+Add EFI_MEMORY_ATTRIBUTE_PROTOCOL definitions.
+Support mixed mode properly for its calls.
+
+Signed-off-by: Evgeniy Baskov <>
+---
+ arch/x86/include/asm/efi.h             |  7 +++++++
+ drivers/firmware/efi/libstub/efistub.h | 20 ++++++++++++++++++++
+ include/linux/efi.h                    |  1 +
+ 3 files changed, 28 insertions(+)
+
+diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+index 6cae68a39ef2..33410789fa00 100644
+--- a/arch/x86/include/asm/efi.h
++++ b/arch/x86/include/asm/efi.h
+@@ -317,6 +317,13 @@ static inline u32 efi64_convert_status(efi_status_t status)
+ #define __efi64_argmap_set_memory_space_attributes(phys, size, flags) \
+ 	(__efi64_split(phys), __efi64_split(size), __efi64_split(flags))
+ 
++/* Memory Attribute Protocol */
++#define __efi64_argmap_set_memory_attributes(protocol, phys, size, flags) \
++	((protocol), __efi64_split(phys), __efi64_split(size), __efi64_split(flags))
++
++#define __efi64_argmap_clear_memory_attributes(protocol, phys, size, flags) \
++	((protocol), __efi64_split(phys), __efi64_split(size), __efi64_split(flags))
++
+ /*
+  * The macros below handle the plumbing for the argument mapping. To add a
+  * mapping for a specific EFI method, simply define a macro
+diff --git a/drivers/firmware/efi/libstub/efistub.h b/drivers/firmware/efi/libstub/efistub.h
+index 08233aea572e..ec4dd5530a36 100644
+--- a/drivers/firmware/efi/libstub/efistub.h
++++ b/drivers/firmware/efi/libstub/efistub.h
+@@ -404,6 +404,26 @@ union efi_dxe_services_table {
+ 	} mixed_mode;
+ };
+ 
++typedef union efi_memory_attribute_protocol efi_memory_attribute_protocol_t;
++
++union efi_memory_attribute_protocol {
++	struct {
++		efi_status_t (__efiapi *get_memory_attributes)(
++			efi_memory_attribute_protocol_t *, efi_physical_addr_t, u64, u64 *);
++
++		efi_status_t (__efiapi *set_memory_attributes)(
++			efi_memory_attribute_protocol_t *, efi_physical_addr_t, u64, u64);
++
++		efi_status_t (__efiapi *clear_memory_attributes)(
++			efi_memory_attribute_protocol_t *, efi_physical_addr_t, u64, u64);
++	};
++	struct {
++		u32 get_memory_attributes;
++		u32 set_memory_attributes;
++		u32 clear_memory_attributes;
++	} mixed_mode;
++};
++
+ typedef union efi_uga_draw_protocol efi_uga_draw_protocol_t;
+ 
+ union efi_uga_draw_protocol {
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index f5bbc1979a64..7bb79a81c9f6 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -342,6 +342,7 @@ void efi_native_runtime_setup(void);
+ #define EFI_LOAD_FILE2_PROTOCOL_GUID		EFI_GUID(0x4006c0c1, 0xfcb3, 0x403e,  0x99, 0x6d, 0x4a, 0x6c, 0x87, 0x24, 0xe0, 0x6d)
+ #define EFI_RT_PROPERTIES_TABLE_GUID		EFI_GUID(0xeb66918a, 0x7eef, 0x402a,  0x84, 0x2e, 0x93, 0x1d, 0x21, 0xc3, 0x8a, 0xe9)
+ #define EFI_DXE_SERVICES_TABLE_GUID		EFI_GUID(0x05ad34ba, 0x6f02, 0x4214,  0x95, 0x2e, 0x4d, 0xa0, 0x39, 0x8e, 0x2b, 0xb9)
++#define EFI_MEMORY_ATTRIBUTE_PROTOCOL_GUID	EFI_GUID(0xf4560cf6, 0x40ec, 0x4b4a,  0xa1, 0x92, 0xbf, 0x1d, 0x57, 0xd0, 0xb1, 0x89)
+ 
+ #define EFI_IMAGE_SECURITY_DATABASE_GUID	EFI_GUID(0xd719b2cb, 0x3d3a, 0x4596,  0xa3, 0xbc, 0xda, 0xd0, 0x0e, 0x67, 0x65, 0x6f)
+ #define EFI_SHIM_LOCK_GUID			EFI_GUID(0x605dab50, 0xe046, 0x4300,  0xab, 0xb6, 0x3d, 0xd8, 0x10, 0xdd, 0x8b, 0x23)
+-- 
+2.40.1
+

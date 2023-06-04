@@ -1,0 +1,46 @@
+From 2280f10647abbf8b9a1ee58f2755b30e954fe0c4 Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Peter Jones <>
+Date: Tue, 13 Dec 2022 17:59:01 +0000
+Subject: [PATCH 34/39] efi/x86: don't try to set page attributes on 0-sized
+ regions.
+
+In "efi/x86: Explicitly set sections memory attributes", the following
+region is defined to help compute page permissions:
+
+          /* .setup [image_base, _head] */
+          efi_adjust_memory_range_protection(image_base,
+                                             (unsigned long)_head - image_base,
+                                             EFI_MEMORY_RO | EFI_MEMORY_XP);
+
+In at least some cases, that will result in a size of 0, which will
+produce an error and a message on the console, though no actual failure
+will be caused in the boot process.
+
+This patch checks that case in efi_adjust_memory_range_protection() and
+returns the error without logging.
+
+Signed-off-by: Peter Jones <>
+---
+ drivers/firmware/efi/libstub/mem.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/firmware/efi/libstub/mem.c b/drivers/firmware/efi/libstub/mem.c
+index 6d3dcdeedf4a..89691b35e4ef 100644
+--- a/drivers/firmware/efi/libstub/mem.c
++++ b/drivers/firmware/efi/libstub/mem.c
+@@ -253,6 +253,9 @@ efi_status_t efi_adjust_memory_range_protection(unsigned long start,
+ 	efi_physical_addr_t rounded_start, rounded_end;
+ 	unsigned long attr_clear;
+ 
++	if (size == 0)
++		return EFI_INVALID_PARAMETER;
++
+ 	/*
+ 	 * This function should not be used to modify attributes
+ 	 * other than writable/executable.
+-- 
+2.40.1
+

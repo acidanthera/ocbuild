@@ -1,0 +1,74 @@
+From 04f5627dde90ce94aa35bd2cecf852f505bbea3e Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Ard Biesheuvel <>
+Date: Fri, 20 May 2022 12:07:58 +0200
+Subject: [PATCH 13/39] efi/x86: libstub: Make DXE calls mixed mode safe
+
+The newly added DXE calls use 64-bit quantities, which means we need to
+marshall them explicitly when running in mixed mode. Currently, we get
+away without it because we just bail when GetMemorySpaceDescriptor()
+fails, which is guaranteed to happen due to the function argument mixup.
+
+Let's fix this properly, though, by defining the macros that describe
+how to marshall the arguments. While at it, drop an incorrect cast on a
+status variable.
+
+Signed-off-by: Ard Biesheuvel <>
+---
+ arch/x86/include/asm/efi.h              | 13 +++++++++++++
+ drivers/firmware/efi/libstub/x86-stub.c |  4 ++--
+ 2 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+index ab9cc21220ba..bb6cd09005bc 100644
+--- a/arch/x86/include/asm/efi.h
++++ b/arch/x86/include/asm/efi.h
+@@ -261,6 +261,8 @@ static inline u32 efi64_convert_status(efi_status_t status)
+ 	return (u32)(status | (u64)status >> 32);
+ }
+ 
++#define __efi64_split(val)		(val) & U32_MAX, (u64)(val) >> 32
++
+ #define __efi64_argmap_free_pages(addr, size)				\
+ 	((addr), 0, (size))
+ 
+@@ -304,6 +306,17 @@ static inline u32 efi64_convert_status(efi_status_t status)
+ #define __efi64_argmap_query_mode(gop, mode, size, info)		\
+ 	((gop), (mode), efi64_zero_upper(size), efi64_zero_upper(info))
+ 
++/* TCG2 protocol */
++#define __efi64_argmap_hash_log_extend_event(prot, fl, addr, size, ev)	\
++	((prot), (fl), 0ULL, (u64)(addr), 0ULL, (u64)(size), 0ULL, ev)
++
++/* DXE services */
++#define __efi64_argmap_get_memory_space_descriptor(phys, desc) \
++	(__efi64_split(phys), (desc))
++
++#define __efi64_argmap_set_memory_space_descriptor(phys, size, flags) \
++	(__efi64_split(phys), __efi64_split(size), __efi64_split(flags))
++
+ /*
+  * The macros below handle the plumbing for the argument mapping. To add a
+  * mapping for a specific EFI method, simply define a macro
+diff --git a/drivers/firmware/efi/libstub/x86-stub.c b/drivers/firmware/efi/libstub/x86-stub.c
+index eda02f925cbf..ff0fad3fc08d 100644
+--- a/drivers/firmware/efi/libstub/x86-stub.c
++++ b/drivers/firmware/efi/libstub/x86-stub.c
+@@ -260,10 +260,10 @@ adjust_memory_range_protection(unsigned long start, unsigned long size)
+ 				      EFI_MEMORY_WB);
+ 
+ 		if (status != EFI_SUCCESS) {
+-			efi_warn("Unable to unprotect memory range [%08lx,%08lx]: %d\n",
++			efi_warn("Unable to unprotect memory range [%08lx,%08lx]: %lx\n",
+ 				 unprotect_start,
+ 				 unprotect_start + unprotect_size,
+-				 (int)status);
++				 status);
+ 		}
+ 	}
+ }
+-- 
+2.40.1
+

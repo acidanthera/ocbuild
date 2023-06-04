@@ -24,11 +24,11 @@ if [ -z "${CROSS_COMPILE_ARM64}" ]; then
 fi
 
 if [ -z "${LINUX_KERNEL_TAG}" ]; then
-  LINUX_KERNEL_TAG=v6.3
+  LINUX_KERNEL_TAG=v5.10.179
 fi
 
 if [ -z "${LINUX_REPO_URL}" ]; then
-  LINUX_REPO_URL=https://github.com/torvalds/linux.git
+  LINUX_REPO_URL=https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
 fi
 
 if [ -z "${BUSYBOX_VERSION}" ]; then
@@ -172,20 +172,20 @@ build_linux_image() {
     git config user.name "$GIT_COMMITER_NAME"
 
     git am --keep-cr --scissors --whitespace=fix \
-      "$WORKDIR"/patches/linux/* || xfatal "Applying Linux patches using git am failed!"
+      "$WORKDIR"/patches/linux/"$LINUX_KERNEL_TAG"/* || xfatal "Applying Linux patches using git am failed!"
 
     popd >/dev/null || exit 1
   fi
 
   # Prepare config
   if [ "$arch" = "X64" ]; then
-    cp "$WORKDIR"/tiny_kernel_x86-64.config "$SRCDIR"/linux/.config || exit 1
+    cp "$WORKDIR"/configs/linux/"$LINUX_KERNEL_TAG"/tiny_kernel_x86-64.config "$SRCDIR"/linux/.config || exit 1
   elif [ "$arch" = "IA32" ]; then
-    cp "$WORKDIR"/tiny_kernel_x86.config "$SRCDIR"/linux/.config || exit 1
+    cp "$WORKDIR"/configs/linux/"$LINUX_KERNEL_TAG"/tiny_kernel_x86.config "$SRCDIR"/linux/.config || exit 1
   elif [ "$arch" = "ARM" ]; then
-    cp "$WORKDIR"/tiny_kernel_arm.config "$SRCDIR"/linux/.config || exit 1
+    cp "$WORKDIR"/configs/linux/"$LINUX_KERNEL_TAG"/tiny_kernel_arm.config "$SRCDIR"/linux/.config || exit 1
   elif [ "$arch" = "AARCH64" ]; then
-    cp "$WORKDIR"/tiny_kernel_arm64.config "$SRCDIR"/linux/.config || exit 1
+    cp "$WORKDIR"/configs/linux/"$LINUX_KERNEL_TAG"/tiny_kernel_arm64.config "$SRCDIR"/linux/.config || exit 1
   else
     xfatal "Unsupported arch!"
   fi
@@ -230,7 +230,11 @@ build_linux_image() {
     make ARCH=arm64 CROSS_COMPILE="$cross_compile" -C "$SRCDIR"/linux clean || xfatal "Cleaning linux build aftifacts failed"
     make ARCH=arm64 CROSS_COMPILE="$cross_compile" -C "$SRCDIR"/linux -j"$(nproc)" || xfatal "Linux kernel compilation failed!"
     # Copy resulting kernel
-    cp "$SRCDIR"/linux/arch/arm64/boot/vmlinuz.efi "$WORKDIR"/build/EFI/BOOT/BOOTAA64.efi || exit 1
+    if [ "${LINUX_KERNEL_TAG}" = "v6.3" ]; then
+      cp "$SRCDIR"/linux/arch/arm64/boot/vmlinuz.efi "$WORKDIR"/build/EFI/BOOT/BOOTAA64.efi || exit 1
+    else
+      cp "$SRCDIR"/linux/arch/arm64/boot/Image "$WORKDIR"/build/EFI/BOOT/BOOTAA64.efi || exit 1
+    fi
   fi
 }
 

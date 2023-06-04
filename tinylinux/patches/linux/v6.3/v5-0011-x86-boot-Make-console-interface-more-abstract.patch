@@ -1,0 +1,360 @@
+From 0b4bb36f2c714a7bce39b3e77494975e608dc921 Mon Sep 17 00:00:00 2001
+Message-Id: <...>
+In-Reply-To: <...>
+References: <...>
+From: Evgeniy Baskov <...>
+To: Ard Biesheuvel <...>
+Cc: Borislav Petkov <...>
+Cc: Andy Lutomirski <...>
+Cc: Dave Hansen <...>
+Cc: Ingo Molnar <...>
+Cc: Peter Zijlstra <...>
+Cc: Thomas Gleixner <...>
+Cc: Alexey Khoroshilov <...>
+Cc: Peter Jones <...>
+Cc: "Limonciello, Mario" <...>
+Cc: joeyli <...>
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Date: Tue, 2 Aug 2022 17:38:30 +0300
+Subject: [PATCH v5 11/23] x86/boot: Make console interface more abstract
+
+To be able to extract kernel from EFI, console output functions
+need to be replaceable by alternative implementations.
+
+Make all of those functions pointers.
+Move serial console code to separate file.
+
+Tested-by: Mario Limonciello <...>
+Signed-off-by: Evgeniy Baskov <...>
+---
+ arch/x86/boot/compressed/Makefile |   2 +-
+ arch/x86/boot/compressed/misc.c   | 109 +------------------------
+ arch/x86/boot/compressed/misc.h   |   9 ++-
+ arch/x86/boot/compressed/putstr.c | 130 ++++++++++++++++++++++++++++++
+ 4 files changed, 139 insertions(+), 111 deletions(-)
+ create mode 100644 arch/x86/boot/compressed/putstr.c
+
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index 0c6e25279ec1..97e4a0e8fbba 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -93,7 +93,7 @@ $(obj)/misc.o: $(obj)/../voffset.h
+ 
+ vmlinux-objs-y := $(obj)/vmlinux.lds $(obj)/kernel_info.o $(obj)/head_$(BITS).o \
+ 	$(obj)/misc.o $(obj)/string.o $(obj)/cmdline.o $(obj)/error.o \
+-	$(obj)/piggy.o $(obj)/cpuflags.o
++	$(obj)/piggy.o $(obj)/cpuflags.o $(obj)/putstr.o
+ 
+ vmlinux-objs-$(CONFIG_EARLY_PRINTK) += $(obj)/early_serial_console.o
+ vmlinux-objs-$(CONFIG_RANDOMIZE_BASE) += $(obj)/kaslr.o
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 25fc0f63e12f..961c3eadcbe5 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -53,13 +53,6 @@ struct port_io_ops pio_ops;
+ memptr free_mem_ptr;
+ memptr free_mem_end_ptr;
+ 
+-static char *vidmem;
+-static int vidport;
+-
+-/* These might be accessed before .bss is cleared, so use .data instead. */
+-static int lines __section(".data");
+-static int cols __section(".data");
+-
+ #ifdef CONFIG_KERNEL_GZIP
+ #include "../../../../lib/decompress_inflate.c"
+ #endif
+@@ -92,95 +85,6 @@ static int cols __section(".data");
+  * ../header.S.
+  */
+ 
+-static void scroll(void)
+-{
+-	int i;
+-
+-	memmove(vidmem, vidmem + cols * 2, (lines - 1) * cols * 2);
+-	for (i = (lines - 1) * cols * 2; i < lines * cols * 2; i += 2)
+-		vidmem[i] = ' ';
+-}
+-
+-#define XMTRDY          0x20
+-
+-#define TXR             0       /*  Transmit register (WRITE) */
+-#define LSR             5       /*  Line Status               */
+-static void serial_putchar(int ch)
+-{
+-	unsigned timeout = 0xffff;
+-
+-	while ((inb(early_serial_base + LSR) & XMTRDY) == 0 && --timeout)
+-		cpu_relax();
+-
+-	outb(ch, early_serial_base + TXR);
+-}
+-
+-void __putstr(const char *s)
+-{
+-	int x, y, pos;
+-	char c;
+-
+-	if (early_serial_base) {
+-		const char *str = s;
+-		while (*str) {
+-			if (*str == '\n')
+-				serial_putchar('\r');
+-			serial_putchar(*str++);
+-		}
+-	}
+-
+-	if (lines == 0 || cols == 0)
+-		return;
+-
+-	x = boot_params->screen_info.orig_x;
+-	y = boot_params->screen_info.orig_y;
+-
+-	while ((c = *s++) != '\0') {
+-		if (c == '\n') {
+-			x = 0;
+-			if (++y >= lines) {
+-				scroll();
+-				y--;
+-			}
+-		} else {
+-			vidmem[(x + cols * y) * 2] = c;
+-			if (++x >= cols) {
+-				x = 0;
+-				if (++y >= lines) {
+-					scroll();
+-					y--;
+-				}
+-			}
+-		}
+-	}
+-
+-	boot_params->screen_info.orig_x = x;
+-	boot_params->screen_info.orig_y = y;
+-
+-	pos = (x + cols * y) * 2;	/* Update cursor position */
+-	outb(14, vidport);
+-	outb(0xff & (pos >> 9), vidport+1);
+-	outb(15, vidport);
+-	outb(0xff & (pos >> 1), vidport+1);
+-}
+-
+-void __puthex(unsigned long value)
+-{
+-	char alpha[2] = "0";
+-	int bits;
+-
+-	for (bits = sizeof(value) * 8 - 4; bits >= 0; bits -= 4) {
+-		unsigned long digit = (value >> bits) & 0xf;
+-
+-		if (digit < 0xA)
+-			alpha[0] = '0' + digit;
+-		else
+-			alpha[0] = 'a' + (digit - 0xA);
+-
+-		__putstr(alpha);
+-	}
+-}
+-
+ #ifdef CONFIG_X86_NEED_RELOCS
+ static void handle_relocations(void *output, unsigned long output_len,
+ 			       unsigned long virt_addr)
+@@ -408,17 +312,6 @@ asmlinkage __visible void *extract_kernel(void *rmode, memptr heap,
+ 
+ 	sanitize_boot_params(boot_params);
+ 
+-	if (boot_params->screen_info.orig_video_mode == 7) {
+-		vidmem = (char *) 0xb0000;
+-		vidport = 0x3b4;
+-	} else {
+-		vidmem = (char *) 0xb8000;
+-		vidport = 0x3d4;
+-	}
+-
+-	lines = boot_params->screen_info.orig_video_lines;
+-	cols = boot_params->screen_info.orig_video_cols;
+-
+ 	init_default_io_ops();
+ 
+ 	/*
+@@ -429,7 +322,7 @@ asmlinkage __visible void *extract_kernel(void *rmode, memptr heap,
+ 	 */
+ 	early_tdx_detect();
+ 
+-	console_init();
++	init_bare_console();
+ 
+ 	/*
+ 	 * Save RSDP address for later use. Have this after console_init()
+diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
+index aea3621faf29..e20f60bfe91b 100644
+--- a/arch/x86/boot/compressed/misc.h
++++ b/arch/x86/boot/compressed/misc.h
+@@ -57,8 +57,8 @@ extern memptr free_mem_end_ptr;
+ void *malloc(int size);
+ void free(void *where);
+ extern struct boot_params *boot_params;
+-void __putstr(const char *s);
+-void __puthex(unsigned long value);
++extern void (*__putstr)(const char *s);
++extern void (*__puthex)(unsigned long value);
+ #define error_putstr(__x)  __putstr(__x)
+ #define error_puthex(__x)  __puthex(__x)
+ 
+@@ -128,6 +128,11 @@ static inline void console_init(void)
+ { }
+ #endif
+ 
++/* putstr.c */
++void init_bare_console(void);
++void init_console_func(void (*putstr_)(const char *),
++		       void (*puthex_)(unsigned long));
++
+ #ifdef CONFIG_AMD_MEM_ENCRYPT
+ void sev_enable(struct boot_params *bp);
+ void snp_check_features(void);
+diff --git a/arch/x86/boot/compressed/putstr.c b/arch/x86/boot/compressed/putstr.c
+new file mode 100644
+index 000000000000..44a4c3dacec5
+--- /dev/null
++++ b/arch/x86/boot/compressed/putstr.c
+@@ -0,0 +1,130 @@
++// SPDX-License-Identifier: GPL-2.0
++#include "misc.h"
++
++/* These might be accessed before .bss is cleared, so use .data instead. */
++static char *vidmem __section(".data");
++static int vidport __section(".data");
++static int lines __section(".data");
++static int cols __section(".data");
++
++void (*__putstr)(const char *s);
++void (*__puthex)(unsigned long value);
++
++static void putstr(const char *s);
++static void puthex(unsigned long value);
++
++void init_console_func(void (*putstr_)(const char *),
++		       void (*puthex_)(unsigned long))
++{
++	__putstr = putstr_;
++	__puthex = puthex_;
++}
++
++void init_bare_console(void)
++{
++	init_console_func(putstr, puthex);
++
++	if (boot_params->screen_info.orig_video_mode == 7) {
++		vidmem = (char *) 0xb0000;
++		vidport = 0x3b4;
++	} else {
++		vidmem = (char *) 0xb8000;
++		vidport = 0x3d4;
++	}
++
++	lines = boot_params->screen_info.orig_video_lines;
++	cols = boot_params->screen_info.orig_video_cols;
++
++	console_init();
++}
++
++static void scroll(void)
++{
++	int i;
++
++	memmove(vidmem, vidmem + cols * 2, (lines - 1) * cols * 2);
++	for (i = (lines - 1) * cols * 2; i < lines * cols * 2; i += 2)
++		vidmem[i] = ' ';
++}
++
++#define XMTRDY          0x20
++
++#define TXR             0       /*  Transmit register (WRITE) */
++#define LSR             5       /*  Line Status               */
++
++static void serial_putchar(int ch)
++{
++	unsigned int timeout = 0xffff;
++
++	while ((inb(early_serial_base + LSR) & XMTRDY) == 0 && --timeout)
++		cpu_relax();
++
++	outb(ch, early_serial_base + TXR);
++}
++
++static void putstr(const char *s)
++{
++	int x, y, pos;
++	char c;
++
++	if (early_serial_base) {
++		const char *str = s;
++
++		while (*str) {
++			if (*str == '\n')
++				serial_putchar('\r');
++			serial_putchar(*str++);
++		}
++	}
++
++	if (lines == 0 || cols == 0)
++		return;
++
++	x = boot_params->screen_info.orig_x;
++	y = boot_params->screen_info.orig_y;
++
++	while ((c = *s++) != '\0') {
++		if (c == '\n') {
++			x = 0;
++			if (++y >= lines) {
++				scroll();
++				y--;
++			}
++		} else {
++			vidmem[(x + cols * y) * 2] = c;
++			if (++x >= cols) {
++				x = 0;
++				if (++y >= lines) {
++					scroll();
++					y--;
++				}
++			}
++		}
++	}
++
++	boot_params->screen_info.orig_x = x;
++	boot_params->screen_info.orig_y = y;
++
++	pos = (x + cols * y) * 2;	/* Update cursor position */
++	outb(14, vidport);
++	outb(0xff & (pos >> 9), vidport+1);
++	outb(15, vidport);
++	outb(0xff & (pos >> 1), vidport+1);
++}
++
++static void puthex(unsigned long value)
++{
++	char alpha[2] = "0";
++	int bits;
++
++	for (bits = sizeof(value) * 8 - 4; bits >= 0; bits -= 4) {
++		unsigned long digit = (value >> bits) & 0xf;
++
++		if (digit < 0xA)
++			alpha[0] = '0' + digit;
++		else
++			alpha[0] = 'a' + (digit - 0xA);
++
++		putstr(alpha);
++	}
++}
+-- 
+2.39.2
+

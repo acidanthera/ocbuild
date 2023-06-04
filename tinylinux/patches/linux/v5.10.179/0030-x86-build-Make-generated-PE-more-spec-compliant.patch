@@ -1,0 +1,446 @@
+From 6632dcf1a59d57889b5126dbef8ea14cd047aaed Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Evgeniy Baskov <>
+Date: Thu, 11 May 2023 17:59:15 +0300
+Subject: [PATCH 30/39] x86/build: Make generated PE more spec compliant
+
+Currently kernel image is not fully compliant PE image, so it may
+fail to boot with stricter implementations of UEFI PE loaders.
+Align the state of generated PE image with loaders expectations and
+the PE documentation [1] referenced by the UEFI specification [2].
+
+Set minimal alignments and sizes according to the spec. Align data
+structures to their natural alignments to prevent unaligned data
+accesses.
+
+Stop generating '.setup' section, as it is no longer used.
+It was needed before, to read bootparams from the kernel image.
+EFISTUB was switch to use local copy of bootparams, to this section
+is no longer necessary.
+
+Don't reserve init_size (a buffer size required for the extracted
+kernel) of memory for the PE image, since in-place extraction is no
+longer used when using UEFI to boot.
+
+Split '.text' into '.data' and '.text' to apply proper memory
+protection attributes. Make '.data' non-executable and '.text'
+non-writable implement W^X.
+
+Fill SizeOfCode, SizeOfInitializedData, SizeOfUninitializedData,
+AddressOfEntryPoint, BaseOfCode and reloc data directory with
+appropriate values in tools/build.c.
+
+Remove alignment flags on sections, since they are only allowed
+on object files.
+
+This and previous patch incorporates some ideas from RFC at [3].
+
+[1] https://download.microsoft.com/download/9/c/5/9c5b2167-8017-4bae-9fde-d599bac8184a/pecoff_v83.docx
+[2] https://uefi.org/sites/default/files/resources/UEFI_Spec_2_9_2021_03_18.pdf
+[3] https://lore.kernel.org/linux-efi//
+
+Signed-off-by: Evgeniy Baskov <>
+---
+ arch/x86/boot/Makefile      |   2 +-
+ arch/x86/boot/header.S      |  62 +++++++--------
+ arch/x86/boot/tools/build.c | 146 +++++++++++++++++-------------------
+ 3 files changed, 99 insertions(+), 111 deletions(-)
+
+diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
+index d1db64f221ec..144e08cdee29 100644
+--- a/arch/x86/boot/Makefile
++++ b/arch/x86/boot/Makefile
+@@ -90,7 +90,7 @@ $(obj)/vmlinux.bin: $(obj)/compressed/vmlinux FORCE
+ 
+ SETUP_OBJS = $(addprefix $(obj)/,$(setup-y))
+ 
+-sed-zoffset := -e 's/^\([0-9a-fA-F]*\) [a-zA-Z] \(startup_32\|startup_64\|efi32_stub_entry\|efi64_stub_entry\|efi_pe_entry\|efi32_pe_entry\|efi_boot_params\|input_data\|kernel_info\|_end\|_ehead\|_text\|z_.*\)$$/\#define ZO_\2 0x\1/p'
++sed-zoffset := -e 's/^\([0-9a-fA-F]*\) [a-zA-Z] \(startup_32\|startup_64\|efi32_stub_entry\|efi64_stub_entry\|efi_pe_entry\|efi32_pe_entry\|efi_boot_params\|input_data\|kernel_info\|_end\|_data\|z_.*\)$$/\#define ZO_\2 0x\1/p'
+ 
+ quiet_cmd_zoffset = ZOFFSET $@
+       cmd_zoffset = $(NM) $< | sed -n $(sed-zoffset) > $@
+diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
+index 85c14546f707..ef9078cfa83b 100644
+--- a/arch/x86/boot/header.S
++++ b/arch/x86/boot/header.S
+@@ -48,6 +48,8 @@ SYSSEG		= 0x1000		/* historical load address >> 4 */
+ 	# Offset to the PE header.
+ 	#
+ 	.long	pe_header
++
++	.align 8
+ pe_header:
+ 	.long	PE_MAGIC
+ 
+@@ -76,16 +78,13 @@ optional_header:
+ 	.byte	0x02				# MajorLinkerVersion
+ 	.byte	0x14				# MinorLinkerVersion
+ 
+-	# Filled in by build.c
++	# All of these are filled in by build.c
+ 	.long	0				# SizeOfCode
+-
+ 	.long	0				# SizeOfInitializedData
+ 	.long	0				# SizeOfUninitializedData
+-
+-	# Filled in by build.c
+ 	.long	0x0000				# AddressOfEntryPoint
++	.long	0x0000				# BaseOfCode
+ 
+-	.long	0x0200				# BaseOfCode
+ #ifdef CONFIG_X86_32
+ 	.long	0				# data
+ #endif
+@@ -98,8 +97,8 @@ extra_header_fields:
+ #else
+ 	.quad	image_base			# ImageBase
+ #endif
+-	.long	0x20				# SectionAlignment
+-	.long	0x20				# FileAlignment
++	.long	0x1000				# SectionAlignment
++	.long	0x200				# FileAlignment
+ 	.word	0				# MajorOperatingSystemVersion
+ 	.word	0				# MinorOperatingSystemVersion
+ 	.word	LINUX_EFISTUB_MAJOR_VERSION	# MajorImageVersion
+@@ -144,26 +143,6 @@ extra_header_fields:
+ 
+ 	# Section table
+ section_table:
+-	#
+-	# The offset & size fields are filled in by build.c.
+-	#
+-	.ascii	".setup"
+-	.byte	0
+-	.byte	0
+-	.long	0
+-	.long	0x0				# startup_{32,64}
+-	.long	0				# Size of initialized data
+-						# on disk
+-	.long	0x0				# startup_{32,64}
+-	.long	0				# PointerToRelocations
+-	.long	0				# PointerToLineNumbers
+-	.word	0				# NumberOfRelocations
+-	.word	0				# NumberOfLineNumbers
+-	.long	IMAGE_SCN_CNT_CODE		| \
+-		IMAGE_SCN_MEM_READ		| \
+-		IMAGE_SCN_MEM_EXECUTE		| \
+-		IMAGE_SCN_ALIGN_16BYTES		# Characteristics
+-
+ 	#
+ 	# The EFI application loader requires a relocation section
+ 	# because EFI applications must be relocatable. The .reloc
+@@ -182,8 +161,7 @@ section_table:
+ 	.word	0				# NumberOfLineNumbers
+ 	.long	IMAGE_SCN_CNT_INITIALIZED_DATA	| \
+ 		IMAGE_SCN_MEM_READ		| \
+-		IMAGE_SCN_MEM_DISCARDABLE	| \
+-		IMAGE_SCN_ALIGN_1BYTES		# Characteristics
++		IMAGE_SCN_MEM_DISCARDABLE	# Characteristics
+ 
+ #ifdef CONFIG_EFI_MIXED
+ 	#
+@@ -201,8 +179,7 @@ section_table:
+ 	.word	0				# NumberOfLineNumbers
+ 	.long	IMAGE_SCN_CNT_INITIALIZED_DATA	| \
+ 		IMAGE_SCN_MEM_READ		| \
+-		IMAGE_SCN_MEM_DISCARDABLE	| \
+-		IMAGE_SCN_ALIGN_1BYTES		# Characteristics
++		IMAGE_SCN_MEM_DISCARDABLE	# Characteristics
+ #endif
+ 
+ 	#
+@@ -223,8 +200,27 @@ section_table:
+ 	.word	0				# NumberOfLineNumbers
+ 	.long	IMAGE_SCN_CNT_CODE		| \
+ 		IMAGE_SCN_MEM_READ		| \
+-		IMAGE_SCN_MEM_EXECUTE		| \
+-		IMAGE_SCN_ALIGN_16BYTES		# Characteristics
++		IMAGE_SCN_MEM_EXECUTE		# Characteristics
++
++	#
++	# The offset & size fields are filled in by build.c.
++	#
++	.ascii	".data"
++	.byte	0
++	.byte	0
++	.byte	0
++	.long	0
++	.long	0x0				# startup_{32,64}
++	.long	0				# Size of initialized data
++						# on disk
++	.long	0x0				# startup_{32,64}
++	.long	0				# PointerToRelocations
++	.long	0				# PointerToLineNumbers
++	.word	0				# NumberOfRelocations
++	.word	0				# NumberOfLineNumbers
++	.long	IMAGE_SCN_CNT_INITIALIZED_DATA	| \
++		IMAGE_SCN_MEM_READ		| \
++		IMAGE_SCN_MEM_WRITE		# Characteristics
+ 
+ 	.set	section_count, (. - section_table) / 40
+ #endif /* CONFIG_EFI_STUB */
+diff --git a/arch/x86/boot/tools/build.c b/arch/x86/boot/tools/build.c
+index cd9fe2bf2c87..8b7c55aa1dcd 100644
+--- a/arch/x86/boot/tools/build.c
++++ b/arch/x86/boot/tools/build.c
+@@ -57,19 +57,20 @@ typedef unsigned int   u32;
+ #define SECTOR_SIZE 512
+ #define FILE_ALIGNMENT 512
+ #define SECTION_ALIGNMENT 4096
++#define BASE_RVA 0x1000
+ 
+ /* This must be large enough to hold the entire setup */
+ u8 buf[SETUP_SECT_MAX*SECTOR_SIZE];
+ 
+-#define PECOFF_RELOC_RESERVE 0x20
++#define PECOFF_RELOC_RESERVE round_up(0x20, FILE_ALIGNMENT)
+ 
+ #ifdef CONFIG_EFI_MIXED
+-#define PECOFF_COMPAT_RESERVE 0x20
++#define PECOFF_COMPAT_RESERVE round_up(0x20, FILE_ALIGNMENT)
+ #else
+ #define PECOFF_COMPAT_RESERVE 0x0
+ #endif
+ 
+-#define RELOC_SECTION_SIZE 10
++#define RELOC_SECTION_SIZE 12
+ 
+ /* PE header has different format depending on the architecture */
+ #ifdef CONFIG_X86_64
+@@ -110,7 +111,7 @@ static unsigned long efi32_pe_entry;
+ static unsigned long efi_boot_params;
+ static unsigned long kernel_info;
+ static unsigned long startup_64;
+-static unsigned long _ehead;
++static unsigned long _data;
+ static unsigned long _end;
+ 
+ /*----------------------------------------------------------------------*/
+@@ -251,7 +252,7 @@ static void *map_output_file(const char *path, size_t size)
+ 
+ #ifdef CONFIG_EFI_STUB
+ 
+-static void update_pecoff_section_header_fields(char *section_name, u32 vma, u32 size, u32 datasz, u32 offset)
++static void update_pecoff_section_header(char *section_name, u32 vma, u32 size, u32 datasz, u32 offset)
+ {
+ 	unsigned short num_sections;
+ 	struct section_header *section;
+@@ -281,22 +282,28 @@ static void update_pecoff_section_header_fields(char *section_name, u32 vma, u32
+ 	}
+ }
+ 
+-static void update_pecoff_section_header(char *section_name, u32 offset, u32 size)
+-{
+-	update_pecoff_section_header_fields(section_name, offset, size, size, offset);
+-}
+ 
+-static void update_pecoff_setup_and_reloc(unsigned int size)
++static unsigned int update_pecoff_reloc_and_compat(unsigned int setup_size)
+ {
+-	u32 setup_offset = SECTOR_SIZE;
+-	u32 reloc_offset = size - PECOFF_RELOC_RESERVE - PECOFF_COMPAT_RESERVE;
++	unsigned int current_rva = BASE_RVA;
++	struct data_directory *dir;
++	u32 reloc_offset = setup_size - PECOFF_RELOC_RESERVE - PECOFF_COMPAT_RESERVE;
++	u32 reloc_memsz = round_up(PECOFF_RELOC_RESERVE, SECTION_ALIGNMENT);
++
+ #ifdef CONFIG_EFI_MIXED
+ 	u32 compat_offset = reloc_offset + PECOFF_RELOC_RESERVE;
++	u32 compat_memsz = round_up(PECOFF_COMPAT_RESERVE, SECTION_ALIGNMENT);
+ #endif
+-	u32 setup_size = reloc_offset - setup_offset;
+ 
+-	update_pecoff_section_header(".setup", setup_offset, setup_size);
+-	update_pecoff_section_header(".reloc", reloc_offset, PECOFF_RELOC_RESERVE);
++	update_pecoff_section_header(".reloc", current_rva, reloc_memsz,
++				     PECOFF_RELOC_RESERVE, reloc_offset);
++
++	/* Update PE data directory to point to '.reloc' section */
++	dir = (struct data_directory *)(get_pe_opt_header(buf) + 1);
++	put_unaligned_le32(current_rva, &dir->base_relocations.virtual_address);
++	put_unaligned_le32(RELOC_SECTION_SIZE, &dir->base_relocations.size);
++
++	current_rva += reloc_memsz;
+ 
+ 	/*
+ 	 * Modify .reloc section contents with a single entry. The
+@@ -306,7 +313,9 @@ static void update_pecoff_setup_and_reloc(unsigned int size)
+ 	put_unaligned_le32(RELOC_SECTION_SIZE, &buf[reloc_offset + 4]);
+ 
+ #ifdef CONFIG_EFI_MIXED
+-	update_pecoff_section_header(".compat", compat_offset, PECOFF_COMPAT_RESERVE);
++	update_pecoff_section_header(".compat", current_rva, compat_memsz,
++				     PECOFF_COMPAT_RESERVE, compat_offset);
++	current_rva += compat_memsz;
+ 
+ 	/*
+ 	 * Put the IA-32 machine type (0x14c) and the associated entry point
+@@ -316,47 +325,56 @@ static void update_pecoff_setup_and_reloc(unsigned int size)
+ 	buf[compat_offset] = 0x1;
+ 	buf[compat_offset + 1] = 0x8;
+ 	put_unaligned_le16(IMAGE_FILE_MACHINE_I386, &buf[compat_offset + 2]);
+-	put_unaligned_le32(efi32_pe_entry + size, &buf[compat_offset + 4]);
++	put_unaligned_le32(efi32_pe_entry + setup_size, &buf[compat_offset + 4]);
+ #endif
++	return current_rva;
+ }
+ 
+-static unsigned int update_pecoff_sections(unsigned int text_start, unsigned int text_sz,
+-			       unsigned int init_sz)
++static void update_pecoff_sections(unsigned int setup_sz,
++				   unsigned int text_sz,
++				   unsigned int file_sz,
++				   unsigned int image_sz)
+ {
+-	unsigned int file_sz = text_start + text_sz;
+-	unsigned int bss_sz = init_sz - file_sz;
++	unsigned int current_rva;
+ 	pe_opt_hdr *hdr = get_pe_opt_header(buf);
+ 
+-	/*
+-	 * The PE/COFF loader may load the image at an address which is
+-	 * misaligned with respect to the kernel_alignment field in the setup
+-	 * header.
+-	 *
+-	 * In order to avoid relocating the kernel to correct the misalignment,
+-	 * add slack to allow the buffer to be aligned within the declared size
+-	 * of the image.
+-	 */
+-	bss_sz	+= CONFIG_PHYSICAL_ALIGN;
+-	init_sz	+= CONFIG_PHYSICAL_ALIGN;
++	current_rva = update_pecoff_reloc_and_compat(setup_sz);
+ 
+-	/*
+-	 * Size of code: Subtract the size of the first sector (512 bytes)
+-	 * which includes the header.
+-	 */
+-	put_unaligned_le32(file_sz - SECTOR_SIZE + bss_sz, &hdr->text_size);
++	/* Update sizes inside PE header: */
+ 
+-	/* Size of image */
+-	put_unaligned_le32(init_sz, &hdr->image_size);
++	/* Text size*/
++	put_unaligned_le32(text_sz, &hdr->text_size);
+ 
+ 	/*
+-	 * Address of entry point for PE/COFF executable
++	 * Initialized data size.
++	 * Consider .compat, .reloc and .data sections as data
+ 	 */
+-	put_unaligned_le32(text_start + efi_pe_entry, &hdr->entry_point);
++	put_unaligned_le32(current_rva - BASE_RVA + file_sz - text_sz,
++			   &hdr->data_size);
++
++	/* Uninialized data size */
++	put_unaligned_le32(image_sz - file_sz, &hdr->bss_size);
++
++	/* Total image size. Consider all rections and headers. */
++	put_unaligned_le32(current_rva + image_sz, &hdr->image_size);
++
++	/* Address of entry point for PE/COFF executable */
++	put_unaligned_le32(current_rva + efi_pe_entry, &hdr->entry_point);
++
++	/* Base of the text section */
++	put_unaligned_le32(current_rva, &hdr->code_base);
+ 
+-	update_pecoff_section_header_fields(".text", text_start, text_sz + bss_sz,
+-					    text_sz, text_start);
++	/* Update PE sections offsets: */
++
++	/* Text section */
++	update_pecoff_section_header(".text", current_rva, text_sz,
++				     text_sz, setup_sz);
++	current_rva += text_sz;
++
++	/* Text section */
++	update_pecoff_section_header(".data", current_rva, image_sz - text_sz,
++				     file_sz - text_sz, setup_sz + text_sz);
+ 
+-	return text_start + file_sz;
+ }
+ 
+ static int reserve_pecoff_reloc_section(int c)
+@@ -395,10 +413,10 @@ static void efi_stub_entry_update(void)
+ 
+ #else
+ 
+-static inline void update_pecoff_setup_and_reloc(unsigned int size) {}
+-static inline void update_pecoff_text(unsigned int text_start,
+-				      unsigned int file_sz,
+-				      unsigned int init_sz) {}
++static unsigned int update_pecoff_sections(unsigned int setup_sz,
++					   unsigned int text_sz,
++					   unsigned int file_sz,
++					   unsigned int image_sz) {}
+ static inline void efi_stub_update_defaults(void) {}
+ static inline void efi_stub_entry_update(void) {}
+ 
+@@ -445,7 +463,7 @@ static void parse_zoffset(char *fname)
+ 		PARSE_ZOFS(p, efi_boot_params);
+ 		PARSE_ZOFS(p, kernel_info);
+ 		PARSE_ZOFS(p, startup_64);
+-		PARSE_ZOFS(p, _ehead);
++		PARSE_ZOFS(p, _data);
+ 		PARSE_ZOFS(p, _end);
+ 
+ 		p = strchr(p, '\n');
+@@ -504,7 +522,6 @@ int main(int argc, char **argv)
+ 	size_t kern_file_size;
+ 	unsigned int setup_size;
+ 	unsigned int setup_sectors;
+-	unsigned int init_size;
+ 	unsigned int total_size;
+ 	unsigned int kern_size;
+ 	void *kernel;
+@@ -532,7 +549,6 @@ int main(int argc, char **argv)
+ #ifdef CONFIG_EFI_STUB
+ 	/* PE specification require 512-byte minimum section file alignment */
+ 	kern_size = round_up(kern_file_size + 4, FILE_ALIGNMENT);
+-	update_pecoff_setup_and_reloc(setup_size);
+ #else
+ 	/* Number of 16-byte paragraphs, including space for a 4-byte CRC */
+ 	kern_size = round_up(kern_file_size + 4, PARAGRAPH_SIZE);
+@@ -545,36 +561,12 @@ int main(int argc, char **argv)
+ 	/* Update kernel_info_offset. */
+ 	put_unaligned_le32(kernel_info, &setup_header[0x77]);
+ 
+-	init_size = get_unaligned_le32(&setup_header[0x6F]);
+-
+ #ifdef CONFIG_EFI_STUB
+-	/*
+-	 * The decompression buffer will start at ImageBase. When relocating
+-	 * the compressed kernel to its end, we must ensure that the head
+-	 * section does not get overwritten.  The head section occupies
+-	 * [i, i + _ehead), and the destination is [init_sz - _end, init_sz).
+-	 *
+-	 * At present these should never overlap, because 'i' is at most 32k
+-	 * because of SETUP_SECT_MAX, '_ehead' is less than 1k, and the
+-	 * calculation of INIT_SIZE in boot/header.S ensures that
+-	 * 'init_sz - _end' is at least 64k.
+-	 *
+-	 * For future-proofing, increase init_sz if necessary.
+-	 */
+-
+-	if (init_size - _end < setup_size + _ehead) {
+-		init_size = round_up(setup_size + _ehead + _end, SECTION_ALIGNMENT);
+-		put_unaligned_le32(init_size, &setup_header[0x6F]);
+-	}
+-
+-	total_size = update_pecoff_sections(setup_size, kern_size, init_size);
+-
++	update_pecoff_sections(setup_size, _data, kern_size, _end);
+ 	efi_stub_entry_update();
+-#else
+-	(void)init_size;
+-	total_size = setup_size + kern_size;
+ #endif
+ 
++	total_size = setup_size + kern_size;
+ 	output = map_output_file(argv[4], total_size);
+ 
+ 	memcpy(output, buf, setup_size);
+-- 
+2.40.1
+

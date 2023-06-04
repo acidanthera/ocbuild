@@ -1,0 +1,45 @@
+From 5a48e1e86f8fa51bb85368c1f7a280bdb14bd452 Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Evgeniy Baskov <>
+Date: Fri, 21 Oct 2022 19:56:57 +0300
+Subject: [PATCH 21/39] x86/boot: Reduce lower limit of physical KASLR
+
+Set lower limit of physical KASLR to 64M.
+
+Previously is was set to 512M when kernel is loaded higher than that.
+That prevented physical KASLR from being performed on x86_32, where
+upper limit is also set to 512M. The limit is pretty arbitrary, and the
+most important is to set it above the ISA hole, i.e. higher than 16M.
+
+It was not that important before, but now kernel is not getting
+relocated to the lower address when booting via EFI, exposing the
+KASLR failures.
+
+Tested-by: Mario Limonciello <>
+Signed-off-by: Evgeniy Baskov <>
+---
+ arch/x86/boot/compressed/kaslr.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/kaslr.c b/arch/x86/boot/compressed/kaslr.c
+index 12a0bac89fab..39fd1f881e66 100644
+--- a/arch/x86/boot/compressed/kaslr.c
++++ b/arch/x86/boot/compressed/kaslr.c
+@@ -854,10 +854,10 @@ void choose_random_location(unsigned long input,
+ 
+ 	/*
+ 	 * Low end of the randomization range should be the
+-	 * smaller of 512M or the initial kernel image
++	 * smaller of 64M or the initial kernel image
+ 	 * location:
+ 	 */
+-	min_addr = min(*output, 512UL << 20);
++	min_addr = min(*output, 64UL << 20);
+ 	/* Make sure minimum is aligned. */
+ 	min_addr = ALIGN(min_addr, CONFIG_PHYSICAL_ALIGN);
+ 
+-- 
+2.40.1
+

@@ -1,0 +1,40 @@
+From 8686d73a9a675aa4dfe03419c7ed3a26365bc1ea Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Peter Jones <>
+Date: Tue, 29 Mar 2022 14:47:43 -0400
+Subject: [PATCH 14/39] efi: x86: Set the NX-compatibility flag in the PE
+ header
+
+Following Baskov Evgeniy's "Handle UEFI NX-restricted page tables"
+patches, it's safe to set this compatibility flag to let loaders know
+they don't need to make special accommodations for kernel to load if
+pre-boot NX is enabled.
+
+Signed-off-by: Peter Jones <>
+Link: https://lore.kernel.org/all//
+Signed-off-by: Ard Biesheuvel <>
+---
+ arch/x86/boot/header.S | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
+index 6dbd7e9f74c9..0352e4589efa 100644
+--- a/arch/x86/boot/header.S
++++ b/arch/x86/boot/header.S
+@@ -163,7 +163,11 @@ extra_header_fields:
+ 	.long	0x200				# SizeOfHeaders
+ 	.long	0				# CheckSum
+ 	.word	IMAGE_SUBSYSTEM_EFI_APPLICATION	# Subsystem (EFI application)
++#ifdef CONFIG_DXE_MEM_ATTRIBUTES
++	.word	IMAGE_DLL_CHARACTERISTICS_NX_COMPAT	# DllCharacteristics
++#else
+ 	.word	0				# DllCharacteristics
++#endif
+ #ifdef CONFIG_X86_32
+ 	.long	0				# SizeOfStackReserve
+ 	.long	0				# SizeOfStackCommit
+-- 
+2.40.1
+

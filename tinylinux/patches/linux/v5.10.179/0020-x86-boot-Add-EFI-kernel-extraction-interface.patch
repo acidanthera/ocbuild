@@ -1,0 +1,192 @@
+From 60fc39ba84bf101b9d186ef7dbb337385263422f Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Evgeniy Baskov <>
+Date: Tue, 13 Dec 2022 13:41:16 +0300
+Subject: [PATCH 20/39] x86/boot: Add EFI kernel extraction interface
+
+To enable extraction of kernel image from EFI stub code directly
+extraction code needs to have separate interface that avoid part
+of low level initialization logic, i.e. serial port setup.
+
+Add kernel extraction function callable from libstub as a part
+of preparation for extracting the kernel directly from EFI environment.
+
+Tested-by: Mario Limonciello <>
+Signed-off-by: Evgeniy Baskov <>
+---
+ arch/x86/boot/compressed/head_32.S |  3 +-
+ arch/x86/boot/compressed/head_64.S |  2 +-
+ arch/x86/boot/compressed/misc.c    | 77 +++++++++++++++++++++---------
+ arch/x86/boot/compressed/misc.h    |  1 +
+ 4 files changed, 57 insertions(+), 26 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+index 659fad53ca82..ed9b1c44eb56 100644
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -218,8 +218,7 @@ SYM_DATA(image_offset, .long 0)
+  */
+ 	.bss
+ 	.balign 4
+-boot_heap:
+-	.fill BOOT_HEAP_SIZE, 1, 0
++SYM_DATA(boot_heap,	.fill BOOT_HEAP_SIZE, 1, 0)
+ boot_stack:
+ 	.fill BOOT_STACK_SIZE, 1, 0
+ boot_stack_end:
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index adecfe366edd..8dd8b57196a4 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -899,7 +899,7 @@ SYM_FUNC_END(startup32_check_sev_cbit)
+  */
+ 	.bss
+ 	.balign 4
+-SYM_DATA_LOCAL(boot_heap,	.fill BOOT_HEAP_SIZE, 1, 0)
++SYM_DATA(boot_heap,	.fill BOOT_HEAP_SIZE, 1, 0)
+ 
+ SYM_DATA_START_LOCAL(boot_stack)
+ 	.fill BOOT_STACK_SIZE, 1, 0
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 1555830bc581..793bbde4ebb3 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -302,11 +302,11 @@ static unsigned long kernel_add_identity_map_dummy(unsigned long start,
+  *             |-------uncompressed kernel image---------|
+  *
+  */
+-asmlinkage __visible void *extract_kernel(void *rmode, memptr heap,
+-				  unsigned char *input_data,
+-				  unsigned long input_len,
+-				  unsigned char *output,
+-				  unsigned long output_len)
++static void *do_extract_kernel(void *rmode,
++			       unsigned char *input_data,
++			       unsigned long input_len,
++			       unsigned char *output,
++			       unsigned long output_len)
+ {
+ 	const unsigned long kernel_total_size = VO__end - VO__text;
+ 	unsigned long virt_addr = LOAD_PHYSICAL_ADDR;
+@@ -320,16 +320,6 @@ asmlinkage __visible void *extract_kernel(void *rmode, memptr heap,
+ 
+ 	sanitize_boot_params(boot_params);
+ 
+-	init_bare_console();
+-
+-	/*
+-	 * On 64-bit this pointer is set during page table uninitialization,
+-	 * but on 32-bit it remains uninitialized, since paging is disabled.
+-	 */
+-	if (IS_ENABLED(CONFIG_X86_32))
+-		kernel_add_identity_map = kernel_add_identity_map_dummy;
+-
+-
+ 	/*
+ 	 * Save RSDP address for later use. Have this after console_init()
+ 	 * so that early debugging output from the RSDP parsing code can be
+@@ -337,11 +327,6 @@ asmlinkage __visible void *extract_kernel(void *rmode, memptr heap,
+ 	 */
+ 	boot_params->acpi_rsdp_addr = get_rsdp_addr();
+ 
+-	debug_putstr("early console in extract_kernel\n");
+-
+-	free_mem_ptr     = heap;	/* Heap */
+-	free_mem_end_ptr = heap + BOOT_HEAP_SIZE;
+-
+ 	/*
+ 	 * The memory hole needed for the kernel is the larger of either
+ 	 * the entire decompressed kernel plus relocation table, or the
+@@ -395,12 +380,12 @@ asmlinkage __visible void *extract_kernel(void *rmode, memptr heap,
+ 	if (virt_addr & (MIN_KERNEL_ALIGN - 1))
+ 		error("Destination virtual address inappropriately aligned");
+ #ifdef CONFIG_X86_64
+-	if (heap > 0x3fffffffffffUL)
++	if (phys_addr > 0x3fffffffffffUL)
+ 		error("Destination address too large");
+ 	if (virt_addr + max(output_len, kernel_total_size) > KERNEL_IMAGE_SIZE)
+ 		error("Destination virtual address is beyond the kernel mapping area");
+ #else
+-	if (heap > ((-__PAGE_OFFSET-(128<<20)-1) & 0x7fffffff))
++	if (phys_addr > ((-__PAGE_OFFSET-(128<<20)-1) & 0x7fffffff))
+ 		error("Destination address too large");
+ #endif
+ #ifndef CONFIG_RELOCATABLE
+@@ -416,13 +401,59 @@ asmlinkage __visible void *extract_kernel(void *rmode, memptr heap,
+ 	parse_elf(output, output_len, virt_addr);
+ 	debug_putstr("done.\nBooting the kernel.\n");
+ 
++	return output;
++}
++
++asmlinkage __visible void *extract_kernel(void *rmode, memptr heap,
++					  unsigned char *input_data,
++					  unsigned long input_len,
++					  unsigned char *output,
++					  unsigned long output_len)
++{
++	void *entry;
++
++	/*
++	 * On 64-bit this pointer is set during page table uninitialization,
++	 * but on 32-bit it remains uninitialized, since paging is disabled.
++	 */
++	if (IS_ENABLED(CONFIG_X86_32))
++		kernel_add_identity_map = kernel_add_identity_map_dummy;
++
++	init_bare_console();
++
++	debug_putstr("early console in extract_kernel\n");
++
++	free_mem_ptr     = heap;	/* Heap */
++	free_mem_end_ptr = heap + BOOT_HEAP_SIZE;
++
++	entry = do_extract_kernel(rmode, input_data,
++				  input_len, output, output_len);
++
+ 	/*
+ 	 * Flush GHCB from cache and map it encrypted again when running as
+ 	 * SEV-ES guest.
+ 	 */
+ 	sev_es_shutdown_ghcb();
+ 
+-	return output;
++	return entry;
++}
++
++void *efi_extract_kernel(struct boot_params *rmode,
++			 struct efi_extract_callbacks *cb,
++			 unsigned char *input_data,
++			 unsigned long input_len,
++			 unsigned long output_len)
++{
++	extern char boot_heap[BOOT_HEAP_SIZE];
++
++	free_mem_ptr     = (unsigned long)boot_heap;	/* Heap */
++	free_mem_end_ptr = (unsigned long)boot_heap + BOOT_HEAP_SIZE;
++
++	init_console_func(cb->putstr, cb->puthex);
++	kernel_add_identity_map = cb->map_range;
++
++	return do_extract_kernel(rmode, input_data,
++				 input_len, (void *)LOAD_PHYSICAL_ADDR, output_len);
+ }
+ 
+ void fortify_panic(const char *name)
+diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
+index e798a1c2fe0e..3be97e6a2af5 100644
+--- a/arch/x86/boot/compressed/misc.h
++++ b/arch/x86/boot/compressed/misc.h
+@@ -24,6 +24,7 @@
+ #include <asm/boot.h>
+ #include <asm/bootparam.h>
+ #include <asm/desc_defs.h>
++#include <asm/shared/extract.h>
+ 
+ #define BOOT_CTYPE_H
+ #include <linux/acpi.h>
+-- 
+2.40.1
+

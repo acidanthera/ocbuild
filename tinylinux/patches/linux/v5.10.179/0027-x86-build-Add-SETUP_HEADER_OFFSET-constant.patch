@@ -1,0 +1,102 @@
+From f70582bb9886c3694322352074397404665f6be5 Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Evgeniy Baskov <>
+Date: Mon, 13 Mar 2023 13:41:03 +0300
+Subject: [PATCH 27/39] x86/build: Add SETUP_HEADER_OFFSET constant
+
+Add and use SETUP_HEADER_OFFSET constant in tools/build.c for
+readability purposes. It equals to the struct boot_params offset in
+kernel image.
+
+Signed-off-by: Evgeniy Baskov <>
+---
+ arch/x86/boot/tools/build.c | 25 +++++++++++++++----------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
+
+diff --git a/arch/x86/boot/tools/build.c b/arch/x86/boot/tools/build.c
+index 2af18c19ef85..99cfe7724d4d 100644
+--- a/arch/x86/boot/tools/build.c
++++ b/arch/x86/boot/tools/build.c
+@@ -51,6 +51,8 @@ typedef unsigned int   u32;
+ #define SETUP_SECT_MIN 5
+ #define SETUP_SECT_MAX 64
+ 
++#define SETUP_HEADER_OFFSET 0x1f1
++
+ #define PARAGRAPH_SIZE 16
+ #define SECTOR_SIZE 512
+ #define FILE_ALIGNMENT 512
+@@ -471,7 +473,7 @@ static unsigned int read_setup(char *path)
+ 	if (file_size < 2 * SECTOR_SIZE)
+ 		die("The setup must be at least 1024 bytes");
+ 
+-	if (get_unaligned_le16(&buf[SECTOR_SIZE - 2]) != 0xAA55)
++	if (get_unaligned_le16(&buf[SETUP_HEADER_OFFSET + 0xD]) != 0xAA55)
+ 		die("Boot block hasn't got boot flag (0xAA55)");
+ 
+ 	fclose(file);
+@@ -507,6 +509,7 @@ int main(int argc, char **argv)
+ 	unsigned int kern_size;
+ 	void *kernel;
+ 	u32 crc = 0xffffffffUL;
++	u8 *setup_header;
+ 	u8 *output;
+ 
+ 	if (argc != 5)
+@@ -518,9 +521,10 @@ int main(int argc, char **argv)
+ 	setup_size = read_setup(argv[1]);
+ 
+ 	setup_sectors = setup_size/SECTOR_SIZE;
++	setup_header = buf + SETUP_HEADER_OFFSET;
+ 
+ 	/* Set the default root device */
+-	put_unaligned_le16(DEFAULT_ROOT_DEV, &buf[508]);
++	put_unaligned_le16(DEFAULT_ROOT_DEV, &setup_header[0xB]);
+ 
+ 	/* Map kernel file to memory */
+ 	kernel = map_file(argv[2], &kern_file_size);
+@@ -535,13 +539,13 @@ int main(int argc, char **argv)
+ #endif
+ 
+ 	/* Patch the setup code with the appropriate size parameters */
+-	buf[0x1f1] = setup_sectors - 1;
+-	put_unaligned_le32(kern_size/PARAGRAPH_SIZE, &buf[0x1f4]);
++	setup_header[0] = setup_sectors - 1;
++	put_unaligned_le32(kern_size/PARAGRAPH_SIZE, &setup_header[3]);
+ 
+-	/* Update kernel_info offset. */
+-	put_unaligned_le32(kernel_info, &buf[0x268]);
++	/* Update kernel_info_offset. */
++	put_unaligned_le32(kernel_info, &setup_header[0x77]);
+ 
+-	init_size = get_unaligned_le32(&buf[0x260]);
++	init_size = get_unaligned_le32(&setup_header[0x6F]);
+ 
+ #ifdef CONFIG_EFI_STUB
+ 	/*
+@@ -560,7 +564,7 @@ int main(int argc, char **argv)
+ 
+ 	if (init_size - _end < setup_size + _ehead) {
+ 		init_size = round_up(setup_size + _ehead + _end, SECTION_ALIGNMENT);
+-		put_unaligned_le32(init_size, &buf[0x260]);
++		put_unaligned_le32(init_size, &setup_header[0x6F]);
+ 	}
+ 
+ 	total_size = update_pecoff_sections(setup_size, kern_size, init_size);
+@@ -579,8 +583,9 @@ int main(int argc, char **argv)
+ 
+ #ifdef CONFIG_EFI_STUB
+ 	/* Copy the setup header */
+-	memcpy(output + setup_size + efi_boot_params + 0x1f1, &buf[0x1f1],
+-	       0x290 - 0x1f1 /* == max possible sizeof(struct setup_header) */);
++	memcpy(output + setup_size + efi_boot_params + SETUP_HEADER_OFFSET,
++	       setup_header, 0x290 - SETUP_HEADER_OFFSET
++	       /* == max possible sizeof(struct setup_header) */);
+ #endif
+ 
+ 	/* Calculate and write kernel checksum. */
+-- 
+2.40.1
+

@@ -1,0 +1,65 @@
+From 5c3296a97ebc1df9f53ba087906187fd814a89de Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Evgeniy Baskov <>
+Date: Wed, 4 May 2022 22:54:08 +0300
+Subject: [PATCH 36/39] x86: Add cmdline_prepare() helper
+
+Command line needs to be combined in both compressed and uncompressed
+kernel from built-in and boot command line strings, which requires
+non-trivial logic depending on CONFIG_CMDLINE_BOOL and
+CONFIG_CMDLINE_OVERRIDE.
+
+Add a helper function to avoid code duplication.
+
+Signed-off-by: Evgeniy Baskov <>
+---
+ arch/x86/include/asm/shared/cmdline.h | 35 +++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+ create mode 100644 arch/x86/include/asm/shared/cmdline.h
+
+diff --git a/arch/x86/include/asm/shared/cmdline.h b/arch/x86/include/asm/shared/cmdline.h
+new file mode 100644
+index 000000000000..119f8b93f8e6
+--- /dev/null
++++ b/arch/x86/include/asm/shared/cmdline.h
+@@ -0,0 +1,35 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++
++#ifndef _ASM_X86_SETUP_CMDLINE_H
++#define _ASM_X86_SETUP_CMDLINE_H
++
++#define _SETUP
++#include <asm/setup.h> /* For COMMAND_LINE_SIZE */
++#undef _SETUP
++
++#include <linux/string.h>
++
++#ifdef CONFIG_CMDLINE_BOOL
++#define COMMAND_LINE_INIT CONFIG_CMDLINE
++#else
++#define COMMAND_LINE_INIT ""
++#endif
++
++/*
++ * command_line and boot_command_line are expected to be at most
++ * COMMAND_LINE_SIZE length. command_line needs to be initialized
++ * with COMMAND_LINE_INIT.
++ */
++static inline void cmdline_prepare(char *command_line,
++				   const char *boot_command_line)
++{
++	if (!IS_ENABLED(CONFIG_CMDLINE_BOOL)) {
++		strscpy(command_line, boot_command_line, COMMAND_LINE_SIZE);
++	} else if (!IS_ENABLED(CONFIG_CMDLINE_OVERRIDE)) {
++		/* Append boot loader cmdline to builtin one. */
++		strlcat(command_line, " ", COMMAND_LINE_SIZE);
++		strlcat(command_line, boot_command_line, COMMAND_LINE_SIZE);
++	}
++}
++
++#endif /* _ASM_X86_SETUP_CMDLINE_H */
+-- 
+2.40.1
+

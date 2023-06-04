@@ -1,0 +1,71 @@
+From 43e368ff943c2278e5642eaaa4d5171ba3b4fb26 Mon Sep 17 00:00:00 2001
+Message-Id: <...>
+In-Reply-To: <...>
+References: <...>
+From: Evgeniy Baskov <...>
+To: Ard Biesheuvel <...>
+Cc: Borislav Petkov <...>
+Cc: Andy Lutomirski <...>
+Cc: Dave Hansen <...>
+Cc: Ingo Molnar <...>
+Cc: Peter Zijlstra <...>
+Cc: Thomas Gleixner <...>
+Cc: Alexey Khoroshilov <...>
+Cc: Peter Jones <...>
+Cc: "Limonciello, Mario" <...>
+Cc: joeyli <...>
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Date: Thu, 9 Jun 2022 18:01:49 +0300
+Subject: [PATCH v5 01/23] x86/boot: Align vmlinuz sections on page size
+
+To protect sections on page table level each section
+needs to be aligned on page size (4KB).
+
+Set sections alignment in linker script.
+
+Tested-by: Mario Limonciello <...>
+Signed-off-by: Evgeniy Baskov <...>
+---
+ arch/x86/boot/compressed/vmlinux.lds.S | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/x86/boot/compressed/vmlinux.lds.S b/arch/x86/boot/compressed/vmlinux.lds.S
+index b22f34b8684a..f339404041a1 100644
+--- a/arch/x86/boot/compressed/vmlinux.lds.S
++++ b/arch/x86/boot/compressed/vmlinux.lds.S
+@@ -27,9 +27,13 @@ SECTIONS
+ 		HEAD_TEXT
+ 		_ehead = . ;
+ 	}
++	. = ALIGN(PAGE_SIZE);
+ 	.rodata..compressed : {
++		_compressed = .;
+ 		*(.rodata..compressed)
++		_ecompressed = .;
+ 	}
++	. = ALIGN(PAGE_SIZE);
+ 	.text :	{
+ 		_text = .; 	/* Text */
+ 		*(.text)
+@@ -37,12 +41,14 @@ SECTIONS
+ 		*(.noinstr.text)
+ 		_etext = . ;
+ 	}
++	. = ALIGN(PAGE_SIZE);
+ 	.rodata : {
+ 		_rodata = . ;
+ 		*(.rodata)	 /* read-only data */
+ 		*(.rodata.*)
+ 		_erodata = . ;
+ 	}
++	. = ALIGN(PAGE_SIZE);
+ 	.data :	{
+ 		_data = . ;
+ 		*(.data)
+-- 
+2.39.2
+

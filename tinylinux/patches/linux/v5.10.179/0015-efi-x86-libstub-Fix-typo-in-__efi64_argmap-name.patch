@@ -1,0 +1,36 @@
+From 508e17014705cb669f9bce65ff8ddc4a69622eaf Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Evgeniy Baskov <>
+Date: Thu, 9 Jun 2022 14:37:30 +0300
+Subject: [PATCH 15/39] efi/x86: libstub: Fix typo in __efi64_argmap* name
+
+The actual name of the DXE services function used
+is set_memory_space_attributes(), not set_memory_space_descriptor().
+
+Change EFI mixed mode helper macro name to match the function name.
+
+Fixes: 31f1a0edff78 ("efi/x86: libstub: Make DXE calls mixed mode safe")
+Signed-off-by: Evgeniy Baskov <>
+Signed-off-by: Ard Biesheuvel <>
+---
+ arch/x86/include/asm/efi.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+index bb6cd09005bc..6cae68a39ef2 100644
+--- a/arch/x86/include/asm/efi.h
++++ b/arch/x86/include/asm/efi.h
+@@ -314,7 +314,7 @@ static inline u32 efi64_convert_status(efi_status_t status)
+ #define __efi64_argmap_get_memory_space_descriptor(phys, desc) \
+ 	(__efi64_split(phys), (desc))
+ 
+-#define __efi64_argmap_set_memory_space_descriptor(phys, size, flags) \
++#define __efi64_argmap_set_memory_space_attributes(phys, size, flags) \
+ 	(__efi64_split(phys), __efi64_split(size), __efi64_split(flags))
+ 
+ /*
+-- 
+2.40.1
+

@@ -1,0 +1,69 @@
+From af8f05acd689785e782ea093a926d48c680dda17 Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Evgeniy Baskov <>
+Date: Thu, 9 Jun 2022 18:18:32 +0300
+Subject: [PATCH 04/39] x86/boot: Increase boot page table size
+
+Previous upper limit ignored pages implicitly mapped from #PF handler
+by code accessing ACPI tables (boot/compressed/{acpi.c,efi.c}),
+so theoretical upper limit is higher than it was set.
+
+Using 4KB pages is desirable for better memory protection granularity.
+Approximately twice as much memory is required for those.
+
+Increase initial page table size to 64 4KB page tables.
+
+Tested-by: Mario Limonciello <>
+Signed-off-by: Evgeniy Baskov <>
+---
+ arch/x86/include/asm/boot.h | 28 ++++++++++++++++------------
+ 1 file changed, 16 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/include/asm/boot.h b/arch/x86/include/asm/boot.h
+index 9191280d9ea3..88836067f88c 100644
+--- a/arch/x86/include/asm/boot.h
++++ b/arch/x86/include/asm/boot.h
+@@ -41,22 +41,26 @@
+ # define BOOT_STACK_SIZE	0x4000
+ 
+ # define BOOT_INIT_PGT_SIZE	(6*4096)
+-# ifdef CONFIG_RANDOMIZE_BASE
+ /*
+  * Assuming all cross the 512GB boundary:
+  * 1 page for level4
+- * (2+2)*4 pages for kernel, param, cmd_line, and randomized kernel
+- * 2 pages for first 2M (video RAM: CONFIG_X86_VERBOSE_BOOTUP).
+- * Total is 19 pages.
++ * (3+3)*2 pages for param and cmd_line
++ * (2+2+S)*2 pages for kernel and randomized kernel, where S is total number
++ *     of sections of kernel. Explanation: 2+2 are upper level page tables.
++ *     We can have only S unaligned parts of section: 1 at the end of the kernel
++ *     and (S-1) at the section borders. The start address of the kernel is
++ *     aligned, so an extra page table. There are at most S=6 sections in
++ *     vmlinux ELF image.
++ * 3 pages for first 2M (video RAM: CONFIG_X86_VERBOSE_BOOTUP).
++ * Total is 36 pages.
++ *
++ * Some number of page tables is also required for the ACPI and UEFI table
++ * mappings, so we round up 36 to 64. Since ACPI tables are generally getting
++ * allocated in a few contiguous regions of memory, they are very unlikely to be
++ * spread out enough to require more than 28 extra page tables and this
++ * would work fine in all more or less sane environments.
+  */
+-#  ifdef CONFIG_X86_VERBOSE_BOOTUP
+-#   define BOOT_PGT_SIZE	(19*4096)
+-#  else /* !CONFIG_X86_VERBOSE_BOOTUP */
+-#   define BOOT_PGT_SIZE	(17*4096)
+-#  endif
+-# else /* !CONFIG_RANDOMIZE_BASE */
+-#  define BOOT_PGT_SIZE		BOOT_INIT_PGT_SIZE
+-# endif
++# define BOOT_PGT_SIZE		(64*4096)
+ 
+ #else /* !CONFIG_X86_64 */
+ # define BOOT_STACK_SIZE	0x1000
+-- 
+2.40.1
+

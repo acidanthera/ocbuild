@@ -1,0 +1,52 @@
+From 0b55cc0cc16dab08f019e21c44e133b2835dec55 Mon Sep 17 00:00:00 2001
+Message-Id: <...>
+In-Reply-To: <...>
+References: <...>
+From: Evgeniy Baskov <...>
+To: Ard Biesheuvel <...>
+Cc: Borislav Petkov <...>
+Cc: Andy Lutomirski <...>
+Cc: Dave Hansen <...>
+Cc: Ingo Molnar <...>
+Cc: Peter Zijlstra <...>
+Cc: Thomas Gleixner <...>
+Cc: Alexey Khoroshilov <...>
+Cc: Peter Jones <...>
+Cc: "Limonciello, Mario" <...>
+Cc: joeyli <...>
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Cc: ...
+Date: Thu, 9 Jun 2022 18:16:24 +0300
+Subject: [PATCH v5 03/23] x86/boot: Set cr0 to known state in trampoline
+
+Ensure WP bit to be set to prevent boot code from writing to
+non-writable memory pages.
+
+Tested-by: Mario Limonciello <...>
+Signed-off-by: Evgeniy Baskov <...>
+---
+ arch/x86/boot/compressed/head_64.S | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index 03c4328a88cb..01fa42d31648 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -660,9 +660,8 @@ SYM_CODE_START(trampoline_32bit_src)
+ 	pushl	$__KERNEL_CS
+ 	pushl	%eax
+ 
+-	/* Enable paging again. */
+-	movl	%cr0, %eax
+-	btsl	$X86_CR0_PG_BIT, %eax
++	/* Enable paging and set CR0 to known state (this also sets WP flag) */
++	movl	$CR0_STATE, %eax
+ 	movl	%eax, %cr0
+ 
+ 	lret
+-- 
+2.39.2
+

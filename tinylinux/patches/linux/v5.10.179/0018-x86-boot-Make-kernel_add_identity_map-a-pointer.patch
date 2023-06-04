@@ -1,0 +1,116 @@
+From 3f7942258875eb13736b3792cb5a6c028b47a85b Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Evgeniy Baskov <>
+Date: Tue, 13 Dec 2022 13:34:55 +0300
+Subject: [PATCH 18/39] x86/boot: Make kernel_add_identity_map() a pointer
+
+Convert kernel_add_identity_map() into a function pointer to be able
+to provide alternative implementations of this function. Required
+to enable calling the code using this function from EFI environment.
+
+Tested-by: Mario Limonciello <>
+Signed-off-by: Evgeniy Baskov <>
+---
+ arch/x86/boot/compressed/ident_map_64.c |  7 ++++---
+ arch/x86/boot/compressed/misc.c         | 24 ++++++++++++++++++++++++
+ arch/x86/boot/compressed/misc.h         | 15 +++------------
+ 3 files changed, 31 insertions(+), 15 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/ident_map_64.c b/arch/x86/boot/compressed/ident_map_64.c
+index 8a3e6b8d822e..d131ca7fcc2a 100644
+--- a/arch/x86/boot/compressed/ident_map_64.c
++++ b/arch/x86/boot/compressed/ident_map_64.c
+@@ -94,9 +94,9 @@ _Bool has_nx; /* set in head_64.S */
+ /*
+  * Adds the specified range to the identity mappings.
+  */
+-unsigned long kernel_add_identity_map(unsigned long start,
+-				      unsigned long end,
+-				      unsigned int flags)
++static unsigned long kernel_add_identity_map_impl(unsigned long start,
++				       unsigned long end,
++				       unsigned int flags)
+ {
+ 	int ret;
+ 
+@@ -144,6 +144,7 @@ void initialize_identity_maps(void *rmode)
+ 	struct setup_data *sd;
+ 
+ 	boot_params = rmode;
++	kernel_add_identity_map = kernel_add_identity_map_impl;
+ 
+ 	/* Exclude the encryption mask from __PHYSICAL_MASK */
+ 	physical_mask &= ~sme_me_mask;
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 8916de581ed9..1555830bc581 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -269,6 +269,22 @@ static void parse_elf(void *output, unsigned long output_len,
+ 	free(phdrs);
+ }
+ 
++/*
++ * This points to actual implementation of mapping function
++ * for current environment: either EFI API wrapper,
++ * own implementation or dummy implementation below.
++ */
++unsigned long (*kernel_add_identity_map)(unsigned long start,
++					 unsigned long end,
++					 unsigned int flags);
++
++static unsigned long kernel_add_identity_map_dummy(unsigned long start,
++							  unsigned long end,
++							  unsigned int flags)
++{
++	return start;
++}
++
+ /*
+  * The compressed kernel image (ZO), has been moved so that its position
+  * is against the end of the buffer used to hold the uncompressed kernel
+@@ -306,6 +322,14 @@ asmlinkage __visible void *extract_kernel(void *rmode, memptr heap,
+ 
+ 	init_bare_console();
+ 
++	/*
++	 * On 64-bit this pointer is set during page table uninitialization,
++	 * but on 32-bit it remains uninitialized, since paging is disabled.
++	 */
++	if (IS_ENABLED(CONFIG_X86_32))
++		kernel_add_identity_map = kernel_add_identity_map_dummy;
++
++
+ 	/*
+ 	 * Save RSDP address for later use. Have this after console_init()
+ 	 * so that early debugging output from the RSDP parsing code can be
+diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
+index 8411ef3bfa0f..e798a1c2fe0e 100644
+--- a/arch/x86/boot/compressed/misc.h
++++ b/arch/x86/boot/compressed/misc.h
+@@ -156,18 +156,9 @@ static inline int count_immovable_mem_regions(void) { return 0; }
+ extern unsigned int __pgtable_l5_enabled, pgdir_shift, ptrs_per_p4d;
+ #endif
+ 
+-#ifdef CONFIG_X86_64
+-extern unsigned long kernel_add_identity_map(unsigned long start,
+-					     unsigned long end,
+-					     unsigned int flags);
+-#else
+-static inline unsigned long kernel_add_identity_map(unsigned long start,
+-						    unsigned long end,
+-						    unsigned int flags)
+-{
+-	return start;
+-}
+-#endif
++extern unsigned long (*kernel_add_identity_map)(unsigned long start,
++						unsigned long end,
++						unsigned int flags);
+ 
+ /* Used by PAGE_KERN* macros: */
+ extern pteval_t __default_kernel_pte_mask;
+-- 
+2.40.1
+

@@ -1,0 +1,42 @@
+From 53e17f52455c586cb01433ff02d5e58a0bb7420f Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Peter Jones <>
+Date: Tue, 18 Oct 2022 16:51:18 -0400
+Subject: [PATCH 33/39] efi/libstub: make memory protection warnings include
+ newlines.
+
+efi_warn() doesn't put newlines on messages, and that makes reading
+warnings without newlines hard to do.
+
+Signed-off-by: Peter Jones <>
+---
+ drivers/firmware/efi/libstub/mem.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/firmware/efi/libstub/mem.c b/drivers/firmware/efi/libstub/mem.c
+index 113d5786ac85..6d3dcdeedf4a 100644
+--- a/drivers/firmware/efi/libstub/mem.c
++++ b/drivers/firmware/efi/libstub/mem.c
+@@ -300,7 +300,7 @@ efi_status_t efi_adjust_memory_range_protection(unsigned long start,
+ 				rounded_end - rounded_start,
+ 				attr_clear);
+ 	if (status != EFI_SUCCESS) {
+-		efi_warn("Failed to clear memory attributes at [%08lx,%08lx]: %lx",
++		efi_warn("Failed to clear memory attributes at [%08lx,%08lx]: %lx\n",
+ 			 (unsigned long)rounded_start,
+ 			 (unsigned long)rounded_end,
+ 			 status);
+@@ -313,7 +313,7 @@ efi_status_t efi_adjust_memory_range_protection(unsigned long start,
+ 				rounded_end - rounded_start,
+ 				attributes);
+ 	if (status != EFI_SUCCESS) {
+-		efi_warn("Failed to set memory attributes at [%08lx,%08lx]: %lx",
++		efi_warn("Failed to set memory attributes at [%08lx,%08lx]: %lx\n",
+ 			 (unsigned long)rounded_start,
+ 			 (unsigned long)rounded_end,
+ 			 status);
+-- 
+2.40.1
+

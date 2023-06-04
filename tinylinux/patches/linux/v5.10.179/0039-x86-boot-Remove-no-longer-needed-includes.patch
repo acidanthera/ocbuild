@@ -1,0 +1,50 @@
+From 1959e515c0c56b0b416bbad04e81dc58d694137c Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Evgeniy Baskov <>
+Date: Tue, 13 Dec 2022 13:59:06 +0300
+Subject: [PATCH 39/39] x86/boot: Remove no longer needed includes
+
+x86/incldue/asm/shared/cmdline.h header already provides
+COMMAND_LINE_SIZE definition.
+
+Signed-off-by: Evgeniy Baskov <>
+---
+ arch/x86/boot/compressed/ident_map_64.c | 4 ----
+ arch/x86/boot/compressed/kaslr.c        | 4 ----
+ 2 files changed, 8 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/ident_map_64.c b/arch/x86/boot/compressed/ident_map_64.c
+index d131ca7fcc2a..008e7f00401d 100644
+--- a/arch/x86/boot/compressed/ident_map_64.c
++++ b/arch/x86/boot/compressed/ident_map_64.c
+@@ -35,10 +35,6 @@
+ #define __PAGE_OFFSET __PAGE_OFFSET_BASE
+ #include "../../mm/ident_map.c"
+ 
+-#define _SETUP
+-#include <asm/setup.h>	/* For COMMAND_LINE_SIZE */
+-#undef _SETUP
+-
+ extern unsigned long get_cmd_line_ptr(void);
+ 
+ /* Used by PAGE_KERN* macros: */
+diff --git a/arch/x86/boot/compressed/kaslr.c b/arch/x86/boot/compressed/kaslr.c
+index 39fd1f881e66..c36f094bda6c 100644
+--- a/arch/x86/boot/compressed/kaslr.c
++++ b/arch/x86/boot/compressed/kaslr.c
+@@ -36,10 +36,6 @@
+ #define STATIC
+ #include <linux/decompress/mm.h>
+ 
+-#define _SETUP
+-#include <asm/setup.h>	/* For COMMAND_LINE_SIZE */
+-#undef _SETUP
+-
+ extern unsigned long get_cmd_line_ptr(void);
+ 
+ /* Simplified build-specific string for starting entropy. */
+-- 
+2.40.1
+

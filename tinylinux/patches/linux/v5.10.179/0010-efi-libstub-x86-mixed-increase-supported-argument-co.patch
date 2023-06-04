@@ -1,0 +1,142 @@
+From 5c034b13f0504d745e0052a350c401e47cef3a7d Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Ard Biesheuvel <>
+Date: Fri, 19 Nov 2021 13:47:43 +0200
+Subject: [PATCH 10/39] efi/libstub: x86/mixed: increase supported argument
+ count
+
+Increase the number of arguments supported by mixed mode calls, so that
+we will be able to call into the TCG2 protocol to measure the initrd
+and extend the associated PCR. This involves the TCG2 protocol's
+hash_log_extend_event() method, which takes five arguments, three of
+which are u64 and need to be split, producing a total of 8 outgoing
+
+Signed-off-by: Ard Biesheuvel <>
+Signed-off-by: Ilias Apalodimas <>
+Link: https://lore.kernel.org/r/
+Signed-off-by: Ard Biesheuvel <>
+---
+ arch/x86/boot/compressed/efi_thunk_64.S | 14 +++++++++++---
+ arch/x86/include/asm/efi.h              | 10 ++++++----
+ arch/x86/platform/efi/efi_thunk_64.S    | 14 ++++++++++++--
+ 3 files changed, 29 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/efi_thunk_64.S b/arch/x86/boot/compressed/efi_thunk_64.S
+index c8052a141b08..3cd3d4610bf1 100644
+--- a/arch/x86/boot/compressed/efi_thunk_64.S
++++ b/arch/x86/boot/compressed/efi_thunk_64.S
+@@ -27,8 +27,6 @@ SYM_FUNC_START(__efi64_thunk)
+ 	push	%rbp
+ 	push	%rbx
+ 
+-	leaq	1f(%rip), %rbp
+-
+ 	movl	%ds, %eax
+ 	push	%rax
+ 	movl	%es, %eax
+@@ -36,6 +34,11 @@ SYM_FUNC_START(__efi64_thunk)
+ 	movl	%ss, %eax
+ 	push	%rax
+ 
++	/* Copy args passed on stack */
++	movq	0x30(%rsp), %rbp
++	movq	0x38(%rsp), %rbx
++	movq	0x40(%rsp), %rax
++
+ 	/*
+ 	 * Convert x86-64 ABI params to i386 ABI
+ 	 */
+@@ -45,10 +48,15 @@ SYM_FUNC_START(__efi64_thunk)
+ 	movl	%ecx, 0x8(%rsp)
+ 	movl	%r8d, 0xc(%rsp)
+ 	movl	%r9d, 0x10(%rsp)
++	movl	%ebp, 0x14(%rsp)
++	movl	%ebx, 0x18(%rsp)
++	movl	%eax, 0x1c(%rsp)
+ 
+-	leaq	0x14(%rsp), %rbx
++	leaq	0x20(%rsp), %rbx
+ 	sgdt	(%rbx)
+ 
++	leaq	1f(%rip), %rbp
++
+ 	/*
+ 	 * Switch to gdt with 32-bit segments. This is the firmware GDT
+ 	 * that was installed when the kernel started executing. This
+diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+index bc9758ef292e..89d68a6e15c8 100644
+--- a/arch/x86/include/asm/efi.h
++++ b/arch/x86/include/asm/efi.h
+@@ -45,13 +45,14 @@ extern unsigned long efi_fw_vendor, efi_config_table;
+ 
+ #define __efi_nargs(...) __efi_nargs_(__VA_ARGS__)
+ #define __efi_nargs_(...) __efi_nargs__(0, ##__VA_ARGS__,	\
++	__efi_arg_sentinel(9), __efi_arg_sentinel(8),		\
+ 	__efi_arg_sentinel(7), __efi_arg_sentinel(6),		\
+ 	__efi_arg_sentinel(5), __efi_arg_sentinel(4),		\
+ 	__efi_arg_sentinel(3), __efi_arg_sentinel(2),		\
+ 	__efi_arg_sentinel(1), __efi_arg_sentinel(0))
+-#define __efi_nargs__(_0, _1, _2, _3, _4, _5, _6, _7, n, ...)	\
++#define __efi_nargs__(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, n, ...)	\
+ 	__take_second_arg(n,					\
+-		({ BUILD_BUG_ON_MSG(1, "__efi_nargs limit exceeded"); 8; }))
++		({ BUILD_BUG_ON_MSG(1, "__efi_nargs limit exceeded"); 10; }))
+ #define __efi_arg_sentinel(n) , n
+ 
+ /*
+@@ -168,8 +169,9 @@ extern u64 efi_setup;
+ extern efi_status_t __efi64_thunk(u32, ...);
+ 
+ #define efi64_thunk(...) ({						\
+-	__efi_nargs_check(efi64_thunk, 6, __VA_ARGS__);			\
+-	__efi64_thunk(__VA_ARGS__);					\
++	u64 __pad[3]; /* must have space for 3 args on the stack */	\
++	__efi_nargs_check(efi64_thunk, 9, __VA_ARGS__);			\
++	__efi64_thunk(__VA_ARGS__, __pad);				\
+ })
+ 
+ static inline bool efi_is_mixed(void)
+diff --git a/arch/x86/platform/efi/efi_thunk_64.S b/arch/x86/platform/efi/efi_thunk_64.S
+index 9eac088ef4de..d1bb7c0ecb52 100644
+--- a/arch/x86/platform/efi/efi_thunk_64.S
++++ b/arch/x86/platform/efi/efi_thunk_64.S
+@@ -37,6 +37,17 @@ SYM_CODE_START(__efi64_thunk)
+ 	movq	efi_scratch(%rip), %rsp
+ 	push	%rax
+ 
++	/*
++	 * Copy args passed via the stack
++	 */
++	subq	$0x24, %rsp
++	movq	0x18(%rax), %rbp
++	movq	0x20(%rax), %rbx
++	movq	0x28(%rax), %rax
++	movl	%ebp, 0x18(%rsp)
++	movl	%ebx, 0x1c(%rsp)
++	movl	%eax, 0x20(%rsp)
++
+ 	/*
+ 	 * Calculate the physical address of the kernel text.
+ 	 */
+@@ -48,7 +59,6 @@ SYM_CODE_START(__efi64_thunk)
+ 	subq	%rax, %rbp
+ 	subq	%rax, %rbx
+ 
+-	subq	$28, %rsp
+ 	movl	%ebx, 0x0(%rsp)		/* return address */
+ 	movl	%esi, 0x4(%rsp)
+ 	movl	%edx, 0x8(%rsp)
+@@ -61,7 +71,7 @@ SYM_CODE_START(__efi64_thunk)
+ 	pushq	%rdi			/* EFI runtime service address */
+ 	lretq
+ 
+-1:	movq	24(%rsp), %rsp
++1:	movq	0x20(%rsp), %rsp
+ 	pop	%rbx
+ 	pop	%rbp
+ 	ANNOTATE_UNRET_SAFE
+-- 
+2.40.1
+

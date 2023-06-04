@@ -1,0 +1,146 @@
+From 1e723d25828029742491fba545cba7c81648930b Mon Sep 17 00:00:00 2001
+Message-Id: <>
+In-Reply-To: <>
+References: <>
+From: Evgeniy Baskov <>
+Date: Tue, 13 Dec 2022 13:02:28 +0300
+Subject: [PATCH 08/39] x86/boot: Map memory explicitly
+
+Implicit mappings hide possible memory errors, e.g. allocations for
+ACPI tables were not included in boot page table size.
+
+Replace all implicit mappings from page fault handler with
+explicit mappings.
+
+Tested-by: Mario Limonciello <>
+Signed-off-by: Evgeniy Baskov <>
+---
+ arch/x86/boot/compressed/acpi.c  | 39 +++++++++++++++++++++++++++++++-
+ arch/x86/boot/compressed/kaslr.c |  2 ++
+ 2 files changed, 40 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/boot/compressed/acpi.c b/arch/x86/boot/compressed/acpi.c
+index 8bcbcee54aa1..a2ff68455520 100644
+--- a/arch/x86/boot/compressed/acpi.c
++++ b/arch/x86/boot/compressed/acpi.c
+@@ -33,6 +33,13 @@ __efi_get_rsdp_addr(unsigned long config_tables, unsigned int nr_tables,
+ #ifdef CONFIG_EFI
+ 	int i;
+ 
++	unsigned long ctab_len = efi_64 ? sizeof(efi_config_table_64_t) :
++					  sizeof(efi_config_table_64_t);
++
++	kernel_add_identity_map(config_tables,
++				config_tables + nr_tables*ctab_len, 0);
++
++
+ 	/* Get EFI tables from systab. */
+ 	for (i = 0; i < nr_tables; i++) {
+ 		acpi_physical_address table;
+@@ -110,6 +117,9 @@ static acpi_physical_address kexec_get_rsdp_addr(void)
+ 	if (!systab)
+ 		error("EFI system table not found in kexec boot_params.");
+ 
++	kernel_add_identity_map((unsigned long)systab,
++				(unsigned long)(systab + 1), 0);
++
+ 	return __efi_get_rsdp_addr((unsigned long)esd->tables, systab->nr_tables, true);
+ }
+ #else
+@@ -152,11 +162,15 @@ static acpi_physical_address efi_get_rsdp_addr(void)
+ 
+ 	/* Handle EFI bitness properly */
+ 	if (efi_64) {
++		kernel_add_identity_map(systab, systab + sizeof(efi_config_table_64_t), 0);
++
+ 		efi_system_table_64_t *stbl = (efi_system_table_64_t *)systab;
+ 
+ 		config_tables	= stbl->tables;
+ 		nr_tables	= stbl->nr_tables;
+ 	} else {
++		kernel_add_identity_map(systab, systab + sizeof(efi_config_table_32_t), 0);
++
+ 		efi_system_table_32_t *stbl = (efi_system_table_32_t *)systab;
+ 
+ 		config_tables	= stbl->tables;
+@@ -191,6 +205,8 @@ static u8 *scan_mem_for_rsdp(u8 *start, u32 length)
+ 
+ 	end = start + length;
+ 
++	kernel_add_identity_map((unsigned long)start, (unsigned long)end, 0);
++
+ 	/* Search from given start address for the requested length */
+ 	for (address = start; address < end; address += ACPI_RSDP_SCAN_STEP) {
+ 		/*
+@@ -226,6 +242,9 @@ static acpi_physical_address bios_get_rsdp_addr(void)
+ 	unsigned long address;
+ 	u8 *rsdp;
+ 
++	kernel_add_identity_map((unsigned long)ACPI_EBDA_PTR_LOCATION,
++				(unsigned long)ACPI_EBDA_PTR_LOCATION + 2, 0);
++
+ 	/* Get the location of the Extended BIOS Data Area (EBDA) */
+ 	address = *(u16 *)ACPI_EBDA_PTR_LOCATION;
+ 	address <<= 4;
+@@ -321,6 +340,9 @@ static unsigned long get_acpi_srat_table(void)
+ 	if (!rsdp)
+ 		return 0;
+ 
++	kernel_add_identity_map((unsigned long)rsdp,
++				(unsigned long)(rsdp + 1), 0);
++
+ 	/* Get ACPI root table from RSDP.*/
+ 	if (!(cmdline_find_option("acpi", arg, sizeof(arg)) == 4 &&
+ 	    !strncmp(arg, "rsdt", 4)) &&
+@@ -337,10 +359,17 @@ static unsigned long get_acpi_srat_table(void)
+ 		return 0;
+ 
+ 	header = (struct acpi_table_header *)root_table;
++
++	kernel_add_identity_map((unsigned long)header,
++				(unsigned long)(header + 1), 0);
++
+ 	len = header->length;
+ 	if (len < sizeof(struct acpi_table_header) + size)
+ 		return 0;
+ 
++	kernel_add_identity_map((unsigned long)header,
++				(unsigned long)header + len, 0);
++
+ 	num_entries = (len - sizeof(struct acpi_table_header)) / size;
+ 	entry = (u8 *)(root_table + sizeof(struct acpi_table_header));
+ 
+@@ -353,8 +382,16 @@ static unsigned long get_acpi_srat_table(void)
+ 		if (acpi_table) {
+ 			header = (struct acpi_table_header *)acpi_table;
+ 
+-			if (ACPI_COMPARE_NAMESEG(header->signature, ACPI_SIG_SRAT))
++			kernel_add_identity_map(acpi_table,
++						acpi_table + sizeof(*header),
++						0);
++
++			if (ACPI_COMPARE_NAMESEG(header->signature, ACPI_SIG_SRAT)) {
++				kernel_add_identity_map(acpi_table,
++							acpi_table + header->length,
++							0);
+ 				return acpi_table;
++			}
+ 		}
+ 		entry += size;
+ 	}
+diff --git a/arch/x86/boot/compressed/kaslr.c b/arch/x86/boot/compressed/kaslr.c
+index b92fffbe761f..12a0bac89fab 100644
+--- a/arch/x86/boot/compressed/kaslr.c
++++ b/arch/x86/boot/compressed/kaslr.c
+@@ -708,6 +708,8 @@ process_efi_entries(unsigned long minimum, unsigned long image_size)
+ 	pmap = (e->efi_memmap | ((__u64)e->efi_memmap_hi << 32));
+ #endif
+ 
++	kernel_add_identity_map(pmap, pmap + e->efi_memmap_size, 0);
++
+ 	nr_desc = e->efi_memmap_size / e->efi_memdesc_size;
+ 	for (i = 0; i < nr_desc; i++) {
+ 		md = efi_early_memdesc_ptr(pmap, e->efi_memdesc_size, i);
+-- 
+2.40.1
+
