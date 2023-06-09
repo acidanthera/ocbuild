@@ -132,7 +132,7 @@ def prepare_test_linux_image(esp_path: str) -> bool:
 
 
 def parse_fw_arch(fw_arch: str) -> str:
-    if fw_arch in ['i386', 'x86', 'IA32', 'X64', 'x64', 'x86_64', 'X86']:
+    if fw_arch in ['i386', 'x86', 'IA32', 'Ia32', 'X64', 'x64', 'x86_64', 'X86', '3264']:
         return 'x86'
     if fw_arch in ['arm', 'arm32', 'aarch32', 'AARCH32', 'ARM']:
         return 'arm'
