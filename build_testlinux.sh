@@ -24,7 +24,8 @@ if [ -z "${CROSS_COMPILE_ARM64}" ]; then
 fi
 
 if [ -z "${LINUX_KERNEL_TAG}" ]; then
-  LINUX_KERNEL_TAG=v5.10.179
+  #LINUX_KERNEL_TAG=v5.10.179
+  LINUX_KERNEL_TAG=v6.3
 fi
 
 if [ -z "${LINUX_REPO_URL}" ]; then
