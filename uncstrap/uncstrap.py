@@ -127,7 +127,7 @@ def build_uncrustify(url):
 
 
 def download_uncrustify_conf():
-    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/master/uncstrap/configs/' + UNC_CONF, timeout=5)
+    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/audk-stable-202302/uncstrap/configs/' + UNC_CONF, timeout=5)
     with open(UNC_CONF, 'wb') as conf:
         conf.write(response.content)
 
@@ -137,10 +137,10 @@ def download_uncrustify_bin():
     if os.path.isfile(zip_name):
         os.remove(zip_name)
 
-    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/master/external/' + zip_name, timeout=5)
+    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/audk-stable-202302/external/' + zip_name, timeout=5)
     real_filename = response.text
 
-    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/master/external/' + real_filename, timeout=5)
+    response = requests.get('https://raw.githubusercontent.com/acidanthera/ocbuild/audk-stable-202302/external/' + real_filename, timeout=5)
     with open(zip_name, 'wb') as archive:
         archive.write(response.content)
 

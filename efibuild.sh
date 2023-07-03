@@ -177,10 +177,10 @@ if [ "$(nasm -v)" = "" ] || [ "$(nasm -v | grep Apple)" != "" ]; then
   fi
   pushd /tmp >/dev/null || exit 1
   rm -rf nasm-mac64.zip
-  curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/nasm-mac64.zip" || exit 1
+  curl -OL "https://github.com/acidanthera/ocbuild/raw/audk-stable-202302/external/nasm-mac64.zip" || exit 1
   nasmzip=$(cat nasm-mac64.zip)
   rm -rf nasm-*
-  curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/${nasmzip}" || exit 1
+  curl -OL "https://github.com/acidanthera/ocbuild/raw/audk-stable-202302/external/${nasmzip}" || exit 1
   unzip -q "${nasmzip}" nasm*/nasm nasm*/ndisasm || exit 1
   sudo mkdir -p /usr/local/bin || exit 1
   sudo mv nasm*/nasm /usr/local/bin/ || exit 1
@@ -200,10 +200,10 @@ if [ "$(iasl -v)" = "" ]; then
   fi
   pushd /tmp >/dev/null || exit 1
   rm -rf iasl-macosx.zip
-  curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/iasl-macosx.zip" || exit 1
+  curl -OL "https://github.com/acidanthera/ocbuild/raw/audk-stable-202302/external/iasl-macosx.zip" || exit 1
   iaslzip=$(cat iasl-macosx.zip)
   rm -rf iasl
-  curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/${iaslzip}" || exit 1
+  curl -OL "https://github.com/acidanthera/ocbuild/raw/audk-stable-202302/external/${iaslzip}" || exit 1
   unzip -q "${iaslzip}" iasl || exit 1
   sudo mkdir -p /usr/local/bin || exit 1
   sudo mv iasl /usr/local/bin/ || exit 1
@@ -374,13 +374,13 @@ fi
 
 if [ "$NEW_BUILDSYSTEM" != "1" ]; then
   if [ "$OFFLINE_MODE" != "1" ]; then
-    updaterepo "https://github.com/acidanthera/audk" UDK master || exit 1
+    updaterepo "https://github.com/acidanthera/audk" UDK audk-stable-202211 || exit 1
   else
     echo "Working in offline mode. Skip UDK update"
   fi
 fi
 cd UDK || exit 1
-HASH=$(git rev-parse origin/master)
+HASH=$(git rev-parse origin/audk-stable-202211)
 
 if [ "$DISCARD_PACKAGES" != "" ]; then 
   for package_to_discard in "${DISCARD_PACKAGES[@]}" ; do
