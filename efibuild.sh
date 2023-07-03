@@ -295,7 +295,7 @@ if [ "${TOOLCHAINS[*]}" = "" ]; then
   elif [ "$(unamer)" = "Windows" ]; then
     TOOLCHAINS=('VS2019')
   else
-    TOOLCHAINS=('CLANGPDB' 'GCC5')
+    TOOLCHAINS=('CLANGPDB' 'GCC')
   fi
 fi
 
