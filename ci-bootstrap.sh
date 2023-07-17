@@ -22,11 +22,11 @@ if [ "$(unamer)" = "Darwin" ]; then
   # env:
   #  PROJECT_TYPE: "UEFI"
 
-  # TODO: Get rid of 13.2.1 after fully migrating to macOS 12 workers.
-  if [ "$(uname -r | cut -f1 -d'.')" = "20" ]; then
-    XCODE_VERSION="13.2.1"
-  else
+  # TODO: Get rid of 13.4.1 after fully migrating to macOS 13 workers.
+  if [ "$(uname -r | cut -f1 -d'.')" = "21" ]; then
     XCODE_VERSION="13.4.1"
+  else
+    XCODE_VERSION="14.3.1"
   fi
 
   case "${PROJECT_TYPE}" in 
