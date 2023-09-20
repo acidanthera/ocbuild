@@ -72,15 +72,6 @@ compressapp() {
   rm -rf dmg-build
 }
 
-requeststatus() { # $1: requestUUID
-  requestUUID="${1}"
-  req_status=$(xcrun altool --notarization-info "$requestUUID" \
-                            --username "${MAC_ACCOUNT_NAME}" \
-                            --password "@env:MAC_ACCOUNT_PASSWORD" 2>&1 \
-               | awk -F ': ' '/Status:/ { print $2; }' )
-  echo "$req_status"
-}
-
 notarizefile() { # $1: path to file to notarize, $2: identifier
   filepath="${1}"
   identifier="${2}"
@@ -90,7 +81,7 @@ notarizefile() { # $1: path to file to notarize, $2: identifier
   fi
 
   if [ "$MAC_ACCOUNT_PASSWORD" = "" ]; then
-    abort "Unable to find Apple account namee" "Set MAC_ACCOUNT_PASSWORD environment variable"
+    abort "Unable to find Apple account name" "Set MAC_ACCOUNT_PASSWORD environment variable"
   fi
 
   asc_provider=$(security find-certificate -a -c "Developer ID" "${workdir}/build.keychain" | grep "alis" | head -1 | cut -d'"' -f4 | cut -d'(' -f2 | cut -d')' -f1)
@@ -100,38 +91,29 @@ notarizefile() { # $1: path to file to notarize, $2: identifier
 
   # Upload file
   echo "Uploading ${filepath} for notarization for ${asc_provider}"
-  requestUUID=$(xcrun altool --notarize-app \
-                             --primary-bundle-id "$identifier" \
-                             --username "${MAC_ACCOUNT_NAME}" \
-                             --password "@env:MAC_ACCOUNT_PASSWORD" \
-                             --asc-provider "${asc_provider}" \
-                             --file "$filepath" 2>&1 \
-                | awk '/RequestUUID/ { print $NF; }')
+  notarytoolOutput=$(xcrun notarytool submit \
+                                      "$filepath" \
+                                      --apple-id "${MAC_ACCOUNT_NAME}" \
+                                      --password "${MAC_ACCOUNT_PASSWORD}" \
+                                      --team-id "${asc_provider}" \
+                                      --output-format plist \
+                                      --wait)
 
-  echo "Notarization RequestUUID: $requestUUID"
+  requestUUID="$(echo "${notarytoolOutput}" | plutil -extract id raw -)"
+  requestStatus="$(echo "${notarytoolOutput}" | plutil -extract status raw -)"
 
-  if [ "$requestUUID" = "" ]; then
-    abort "Could not upload for notarization"
+  # This will handle errors as well
+  if [ "$requestStatus" != "Accepted" ]; then
+    abort "Could not notarize ${filepath}: ${notarytoolOutput}"
   fi
-
-  # Wait for status to be not "in progress" any more
-  request_status="in progress"
-  while [ "$request_status" = "in progress" ]; do
-    printf "waiting... "
-    sleep 10
-    request_status=$(requeststatus "$requestUUID")
-    echo "$request_status"
-  done
 
   # Print status information
-  xcrun altool --notarization-info "$requestUUID" \
-               --username "${MAC_ACCOUNT_NAME}" \
-               --password "@env:MAC_ACCOUNT_PASSWORD"
+  xcrun notarytool info \
+                   "$requestUUID" \
+                   --apple-id "${MAC_ACCOUNT_NAME}" \
+                   --password "${MAC_ACCOUNT_PASSWORD}" \
+                   --team-id "${asc_provider}"
   echo
-
-  if [ "$request_status" != "success" ]; then
-    abort "Could not notarize ${filepath}"
-  fi
 }
 
 cleanup
