@@ -56,7 +56,6 @@ updaterepo() {
   if [ "$2" = "UDK" ] && [ "$DISCARD_SUBMODULES" != "" ] && [ ! -f submodules.ready ]; then
     setcommitauthor
     for module_to_discard in "${DISCARD_SUBMODULES[@]}" ; do
-      git submodule deinit "${module_to_discard}"
       git rm "${module_to_discard}"
     done
     git commit -m "Discarded submodules"
