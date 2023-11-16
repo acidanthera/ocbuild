@@ -33,6 +33,12 @@ prompt() {
   fi
 }
 
+setcommitauthor() {
+  git config user.name ocbuild
+  git config user.email ocbuild@acidanthera.local
+  git config commit.gpgsign false
+}
+
 updaterepo() {
   if [ ! -d "$2" ]; then
     git clone "$1" -b "$3" --depth=1 "$2" || exit 1
@@ -46,6 +52,14 @@ updaterepo() {
       echo "$sym"
       exit 1
     fi
+  fi
+  if [ "$2" = "UDK" ] && [ "$DISCARD_SUBMODULES" != "" ] && [ ! -f submodules.ready ]; then
+    setcommitauthor
+    for module_to_discard in "${DISCARD_SUBMODULES[@]}" ; do
+      git rm "${module_to_discard}"
+    done
+    git commit -m "Discarded submodules"
+    touch submodules.ready
   fi
   git submodule update --init --recommend-shallow || exit 1
   popd >/dev/null || exit 1
@@ -393,9 +407,7 @@ fi
 if [ "$NEW_BUILDSYSTEM" != "1" ]; then
   if [ -d ../Patches ]; then
     if [ ! -f patches.ready ]; then
-      git config user.name ocbuild
-      git config user.email ocbuild@acidanthera.local
-      git config commit.gpgsign false
+      setcommitauthor
       for i in ../Patches/* ; do
         git apply --ignore-whitespace "$i" || exit 1
         git add .
