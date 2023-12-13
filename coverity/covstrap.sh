@@ -67,7 +67,7 @@ done
 COVERITY_SCAN_DIR="${PROJECT_PATH}/cov-scan"
 COVERITY_SCAN_ARCHIVE=cov-analysis.dmg
 COVERITY_SCAN_INSTALLER=cov-analysis.sh
-COVERITY_SCAN_LINK="https://scan.coverity.com/download/cxx/macOSX"
+COVERITY_SCAN_LINK="https://scan.coverity.com/download/cxx/macOS"
 
 ret=0
 echo "Downloading Coverity build tool..."
