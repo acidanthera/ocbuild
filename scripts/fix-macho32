@@ -15,32 +15,45 @@ from macholib.mach_o import (
     LC_DATA_IN_CODE,
 )
 
+#
+# Binary specified in arguments.
+#
 input_path = Path(argv[1].strip())
 
-# Extract i386 slice from FAT binary if needed
+#
+# Check if we even have a 32-bit binary or 32-bit slice.
+#
 result = subprocess.run(["lipo", input_path, "-info"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 if "i386" not in result.stdout:
     print("Binary is not 32-bit, nothing to do")
     sys.exit(0)
 
-
+#
+# Extract i386 slice from FAT binary if needed.
+#
+print("Processing {}".format(input_path))
 if "Non-fat" not in result.stdout:
+    print("Binary is fat, extracting 32-bit slice")
     is_fat_binary = True
-    print("Extracting 32-bit slice from fat binary")
     slice_temp_file, slice_path = tempfile.mkstemp()
     slice_path = Path(slice_path)
     os.close(slice_temp_file)
-    result = subprocess.run(["lipo", input_path, "-thin", "i386", "-output", slice_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    
-    # Initialize parser
-    original_file = BytesIO(slice_path.read_bytes())
-    machFile = macholib.MachO.MachO(slice_path)
-else:
-    is_fat_binary = False
-    original_file = BytesIO(input_path.read_bytes())
-    machFile = macholib.MachO.MachO(input_path)
+    subprocess.run(["lipo", input_path, "-thin", "i386", "-output", slice_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-# Strip min version command
+else:
+    print("Binary is pure 32-bit")
+    is_fat_binary = False
+    slice_path = input_path
+
+#
+# Read Mach-O binary.
+#
+original_file = BytesIO(slice_path.read_bytes())
+machFile = macholib.MachO.MachO(slice_path)
+
+#
+# Strip LC_VERSION_MIN_MACOSX command.
+#
 for cmd in machFile.headers[0].commands:
     if (cmd[0].cmd == LC_VERSION_MIN_MACOSX):
         machFile.headers[0].changedHeaderSizeBy(-cmd[0].cmdsize)
@@ -48,7 +61,9 @@ for cmd in machFile.headers[0].commands:
         machFile.headers[0].header.ncmds -= 1
         print("Removed LC_VERSION_MIN_MACOSX")
 
-# Strip data-in-code command if zero
+#
+# Strip LC_DATA_IN_CODE command if zero.
+#
 for cmd in machFile.headers[0].commands:
     if (cmd[0].cmd == LC_DATA_IN_CODE):
         if (cmd[1].datasize == 0):
@@ -58,50 +73,58 @@ for cmd in machFile.headers[0].commands:
             print("Removed LC_DATA_IN_CODE")
         else:
             print("LC_DATA_IN_CODE data size is non-zero!")
+            if (is_fat_binary):
+                slice_path.unlink()
             sys.exit(-1)
 
-# Align symbol table
+#
+# Align symbol table offset.
+#
 symCmd = machFile.headers[0].getSymbolTableCommand()
 
 oldSymOff = symCmd.symoff
 newSymOff = (oldSymOff + 3) & ~(3)
-print("Old symbol table {} new symbol table {}".format(oldSymOff, newSymOff))
+print("Old symbol table offset at {}, new symbol table will be at {}".format(oldSymOff, newSymOff))
 symOffDelta = newSymOff - oldSymOff
 
-# Align string table
+#
+# Align string table offset.
+#
 oldStrOff = symCmd.stroff
 newStrOff = ((oldStrOff + symOffDelta) + 3) & ~(3)
-print("Old string table {} new string table {}".format(oldStrOff, newStrOff))
+print("Old string table offset at {}, new string table will be at {}".format(oldStrOff, newStrOff))
 strOffDelta = newStrOff - (oldStrOff + symOffDelta)
 
-# Write header
+#
+# Write new offsets to symbol table command.
+#
 symCmd.symoff = newSymOff
 symCmd.stroff = newStrOff
 
-if is_fat_binary:
-    new_file = slice_path.open("wb")
-else:
-    new_file = input_path.open("wb")
+#
+# Write Mach-O header to new file.
+#
+with open(slice_path, "wb") as new_file:
+    machFile.headers[0].write(new_file)
+    original_file.seek(new_file.tell())
 
-machFile.headers[0].write(new_file)  # Write header to file
-original_file.seek(new_file.tell())  # Seek past header
+    #
+    # Copy rest of file and pad accordingly.
+    #
+    if oldSymOff > oldStrOff:
+        new_file.write(original_file.read(oldStrOff - original_file.tell()))
+        new_file.write(b"\0" * strOffDelta)
+        new_file.write(original_file.read(oldSymOff - original_file.tell()))
+        new_file.write(b"\0" * symOffDelta)
+        new_file.write(original_file.read())
+    else:
+        new_file.write(original_file.read(oldSymOff - original_file.tell()))
+        new_file.write(b"\0" * symOffDelta)
+        new_file.write(original_file.read(oldStrOff - original_file.tell()))
+        new_file.write(b"\0" * strOffDelta)
+        new_file.write(original_file.read())
 
-# Copy rest of file and pad accordingly
-if oldSymOff > oldStrOff:
-    new_file.write(original_file.read(oldStrOff - original_file.tell()))
-    new_file.write(b"\0" * strOffDelta)
-    new_file.write(original_file.read(oldSymOff - original_file.tell()))
-    new_file.write(b"\0" * symOffDelta)
-    new_file.write(original_file.read())
-else:
-    new_file.write(original_file.read(oldSymOff - original_file.tell()))
-    new_file.write(b"\0" * symOffDelta)
-    new_file.write(original_file.read(oldStrOff - original_file.tell()))
-    new_file.write(b"\0" * strOffDelta)
-    new_file.write(original_file.read())
-
-print("Symbol table aligned for " + input_path.name)
-
+print("Wrote new binary to {}".format(slice_path))
 if is_fat_binary:
     print("Replacing 32-bit slice in fat binary")
     result = subprocess.run(["lipo", input_path, "-replace", "i386", slice_path, "-output", input_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
