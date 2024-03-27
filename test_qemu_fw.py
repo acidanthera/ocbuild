@@ -53,7 +53,7 @@ def test_firmware(fw_path: str, boot_drive_path: str, expected_string: str, time
         logging.error("Can't retrieve QEMU version!")
         return False
 
-    qemu_x86_runner = f"qemu-system-x86_64 {'-enable-kvm ' if qemu_version < (6, 2, 0) else ''}"
+    qemu_x86_runner = f"qemu-system-x86_64 -enable-kvm"
     qemu_arm_runner = 'qemu-system-arm '
     qemu_arm64_runner = 'qemu-system-aarch64 '
     machine_string_x86 = f" -cpu Penryn,+smep,+smap{',+rdrand' if rdrand else ''} -smp 2 -machine q35 -m 2048 "
