@@ -185,7 +185,7 @@ def main():
     # host directory corruption.
     with tempfile.TemporaryDirectory() as temp_dir:
         esp_dir = os.path.join(temp_dir, 'ESP')
-        boot_drive = '-hda fat:rw:' + esp_dir
+        boot_drive = '-drive format=raw,file=fat:rw:' + esp_dir
         if args.test_linux:
             if not prepare_test_linux_image(testlinux_path):
                 sys.exit(1)
