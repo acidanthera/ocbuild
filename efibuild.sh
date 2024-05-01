@@ -394,7 +394,7 @@ if [ "$NEW_BUILDSYSTEM" != "1" ]; then
   fi
 fi
 cd UDK || exit 1
-HASH=$(git rev-parse origin/master)
+HASH=$(git rev-parse '@{upstream}')
 
 if [ "$DISCARD_PACKAGES" != "" ]; then 
   for package_to_discard in "${DISCARD_PACKAGES[@]}" ; do
