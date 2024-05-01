@@ -21,6 +21,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          python3 -m venv ~/pyenv
+          source ~/pyenv/bin/activate
           python3 -m pip install -r requirements.txt
 
       - name: CI Bootstrap
@@ -29,6 +31,7 @@ jobs:
 
       - name: Build Uncrustify
         run: |
+          source ~/pyenv/bin/activate
           cd uncstrap && python3 ./uncstrap.py -b
           echo "UNC_SHA=$(cat unc-sha.txt)" >> $GITHUB_ENV
 
