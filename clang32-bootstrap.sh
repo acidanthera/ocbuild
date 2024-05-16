@@ -27,7 +27,7 @@ CLANG32_SCRIPTS=(
   "libtool32"
 )
 
-CLANG32_ZIP="clang-12.zip"
+CLANG32_ZIP="clang-12-xcode-14.zip"
 
 "${CURL}" -LfsO "https://github.com/acidanthera/ocbuild/releases/download/llvm-kext32-latest/${CLANG32_ZIP}" || ret=$?
 if [ $ret -ne 0 ]; then
