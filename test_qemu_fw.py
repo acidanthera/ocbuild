@@ -60,7 +60,7 @@ def test_firmware(fw_path: str, boot_drive_path: str, expected_string: str, time
     machine_string_x86 = f" -cpu Penryn,+smep{',+smap' if smap else ''}{',+rdrand' if rdrand else ''} -smp 2 -machine q35 -m 2048 "
     machine_string_arm = ' -cpu cortex-a15 -smp 2 -machine virt,highmem=off ' \
                          ' -accel tcg,tb-size=1024 -m 2048 '
-    machine_string_arm64 = ' -cpu cortex-a76 -smp 2 -machine virt ' \
+    machine_string_arm64 = ' -cpu cortex-a76 -smp 2 -machine virt,virtualization=on ' \
                            '-accel tcg,tb-size=1024 -m 2048 '
     if fw_arch == "x86":
         p = pexpect.spawn(qemu_x86_runner + machine_string_x86 +
