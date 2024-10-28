@@ -36,7 +36,7 @@ def get_qemu_version() -> tuple:
     return version
 
 
-def test_firmware(fw_path: str, boot_drive_path: str, expected_string: str, timeout: int, rdrand: bool, smap: bool, fw_arch: str) -> bool:
+def test_firmware(fw_path: str, boot_drive_path: str, expected_string: str, timeout: int, rdrand: bool, winpe: bool, fw_arch: str) -> bool:
     """
     Run QEMU and check whether firmware can start given image
 
@@ -45,7 +45,7 @@ def test_firmware(fw_path: str, boot_drive_path: str, expected_string: str, time
     :param expected_string: The expected string we wait for during image run
     :param timeout: Timeout for image run
     :param rdrand: Run with rdrand support or not
-    :param smap: Run with SMAP support or not
+    :param winpe: Test WinPE or not
     :return the boolean result:
     """
     result = False
@@ -57,11 +57,10 @@ def test_firmware(fw_path: str, boot_drive_path: str, expected_string: str, time
     qemu_x86_runner = f"qemu-system-x86_64 {'-enable-kvm ' if qemu_version < (6, 2, 0) else ''}"
     qemu_arm_runner = 'qemu-system-arm '
     qemu_arm64_runner = 'qemu-system-aarch64 '
-    machine_string_x86 = f" -cpu Penryn,+smep{',+smap' if smap else ''}{',+rdrand' if rdrand else ''} -smp 2 -machine q35 -m 2048 "
+    machine_string_x86 = f" -cpu Penryn,+smep{'' if winpe else ',+smap'}{',+rdrand' if rdrand else ''} -smp 2 -machine q35 -m 2048 "
     machine_string_arm = ' -cpu cortex-a15 -smp 2 -machine virt,highmem=off ' \
                          ' -accel tcg,tb-size=1024 -m 2048 '
-    machine_string_arm64 = ' -cpu cortex-a76 -smp 2 -machine virt,virtualization=on ' \
-                           '-accel tcg,tb-size=1024 -m 2048 '
+    machine_string_arm64 = f" -cpu cortex-a76 -smp 2 -machine virt{',virtualization=on' if winpe else ''} -accel tcg,tb-size=1024 -m 2048 "
     if fw_arch == "x86":
         p = pexpect.spawn(qemu_x86_runner + machine_string_x86 +
                           '-bios ' + fw_path + ' -display none -serial stdio '
@@ -187,7 +186,7 @@ def main():
     with tempfile.TemporaryDirectory() as temp_dir:
         esp_dir = os.path.join(temp_dir, 'ESP')
         boot_drive = '-drive format=raw,file=fat:rw:' + esp_dir
-        smap = True
+        winpe = False
         if args.test_linux:
             if not prepare_test_linux_image(testlinux_path):
                 sys.exit(1)
@@ -199,14 +198,14 @@ def main():
             boot_drive = ' -cdrom ' + testwinpe_path
             expected_string = 'EVENT: The CMD command is now available'
             pexpect_timeout = 600
-            smap = False
+            winpe = True
         else:
             if not prepare_test_console(testconsole_path):
                 sys.exit(1)
             shutil.copytree(testconsole_path, esp_dir)
             expected_string = 'GPT entry is not accessible'
         print("Testing ...")
-        if test_firmware(args.fw_path, boot_drive, expected_string, pexpect_timeout, args.rdrand, smap, fw_arch):
+        if test_firmware(args.fw_path, boot_drive, expected_string, pexpect_timeout, args.rdrand, winpe, fw_arch):
             sys.exit(0)
         else:
             sys.exit(1)
