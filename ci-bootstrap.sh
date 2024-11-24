@@ -26,7 +26,7 @@ if [ "$(unamer)" = "Darwin" ]; then
   if [ "$(uname -r | cut -f1 -d'.')" = "21" ]; then
     XCODE_VERSION="13.4.1"
   else
-    XCODE_VERSION="14.3.1"
+    XCODE_VERSION="15.4.0"
   fi
 
   case "${PROJECT_TYPE}" in 
