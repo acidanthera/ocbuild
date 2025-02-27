@@ -93,7 +93,7 @@ def onerror(func, path, *_):
 
 def build_uncrustify(url):
     if os.path.isdir(UNC_REPO):
-        shutil.rmtree(UNC_REPO, onerror=onerror)
+        shutil.rmtree(UNC_REPO, onexc=onerror)
 
     proj_root = os.getcwd()
 
