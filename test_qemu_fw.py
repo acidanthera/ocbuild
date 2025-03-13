@@ -57,7 +57,7 @@ def test_firmware(args, boot_drive_path: str, expected_string: str, timeout: int
     qemu_x86_runner = f"qemu-system-x86_64 {'-enable-kvm ' if qemu_version < (6, 2, 0) else ''}"
     qemu_arm_runner = 'qemu-system-arm '
     qemu_arm64_runner = 'qemu-system-aarch64 '
-    machine_string_x86 = f" -cpu Penryn,+smep{'' if args.test_winpe else ',+smap'}{',+rdrand' if args.rdrand else ''} -smp 2 -machine q35 -m 2048 "
+    machine_string_x86 = f" -cpu Penryn,+smep,+smap{',+rdrand' if args.rdrand else ''} -smp 2 -machine q35 -m 2048 "
     machine_string_arm = ' -cpu cortex-a15 -smp 2 -machine virt,highmem=off ' \
                          ' -accel tcg,tb-size=1024 -m 2048 '
     machine_string_arm64 = f" -cpu cortex-a76 -smp 2 -machine virt{',virtualization=on' if args.test_winpe else ''} -accel tcg,tb-size=1024 -m 2048 "
