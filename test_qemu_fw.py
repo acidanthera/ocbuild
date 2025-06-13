@@ -89,7 +89,11 @@ def test_firmware(args, boot_drive_path: str, expected_string: str, timeout: int
         except UnicodeDecodeError:
             error_log = p.before
         logging.error("Process output before timeout:\n %s", error_log)
-    p.close()
+    try:
+        p.close()
+    except pexpect.ExceptionPexpect:
+        # It is possible there is a timing issue when pexpect stops processes.
+        p.close()
     print("Exit Status   = " + str(p.exitstatus))
     print("Signal Status = " + str(p.signalstatus))
     return result
