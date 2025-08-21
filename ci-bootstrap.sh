@@ -22,15 +22,7 @@ if [ "$(unamer)" = "Darwin" ]; then
   # env:
   #  PROJECT_TYPE: "UEFI"
 
-  # TODO: Get rid of 13.4.1 after fully migrating to macOS 13 workers.
-  if [ "$(uname -r | cut -f1 -d'.')" = "21" ]; then
-    XCODE_VERSION="13.4.1"
-  else
-    # Stick to 15.2 because current default download version of Coverity cannot support higher yet:
-    # https://sig-synopsys.my.site.com/community/s/article/coverity-capture-failed-for-Xcode-15-4-version-on-Mac-OS
-    # https://documentation.blackduck.com/bundle/coverity-docs/page/webhelp-files/relnotes_latest.html#:~:text=Bug%20fixes-,CAP%2D2296,-Reported%20in%20version
-    XCODE_VERSION="15.2.0"
-  fi
+  XCODE_VERSION="16.4.0"
 
   case "${PROJECT_TYPE}" in 
     UEFI)
