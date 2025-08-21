@@ -22,7 +22,7 @@ if [ "$(unamer)" = "Darwin" ]; then
   # env:
   #  PROJECT_TYPE: "UEFI"
 
-  XCODE_VERSION="16.4.0"
+  XCODE_VERSION="16.1.0"
 
   case "${PROJECT_TYPE}" in 
     UEFI)
