@@ -72,7 +72,7 @@ jobs:
 
   build-windows:
     name: Windows VS2019
-    runs-on: windows-2019
+    runs-on: windows-latest
     defaults:
       run:
         shell: bash

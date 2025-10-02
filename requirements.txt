@@ -4,3 +4,4 @@ gitpython
 pexpect
 argparse
 prospector
+macholib

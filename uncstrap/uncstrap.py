@@ -109,7 +109,7 @@ def build_uncrustify(url):
 
     os.mkdir('build')
     os.chdir('build')
-    cmake_args = ['cmake', '..']
+    cmake_args = ['cmake', '-DCMAKE_POLICY_VERSION_MINIMUM=3.5', '..']
     ret = subprocess.check_call(cmake_args)
     if ret != 0:
         abort('Failed to generate makefile with cmake')
