@@ -42,8 +42,11 @@ setcommitauthor() {
 updaterepo() {
   if [ ! -d "$2" ]; then
     git clone "$1" -b "$3" --depth=1 "$2" || exit 1
+    pushd "$2" >/dev/null || exit 1
+    echo "Cloned ${1} at commit $(git rev-parse --short=8 HEAD)."
+  else
+    pushd "$2" >/dev/null || exit 1
   fi
-  pushd "$2" >/dev/null || exit 1
   git pull --rebase --autostash
   if [ "$2" != "UDK" ] && [ "$(unamer)" != "Windows" ]; then
     sym=$(find . -not -type d -not -path "./coreboot/*" -not -path "./UDK/*" -exec file "{}" ";" | grep CRLF)
