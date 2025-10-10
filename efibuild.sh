@@ -41,13 +41,22 @@ setcommitauthor() {
 
 updaterepo() {
   if [ ! -d "$2" ]; then
-    git clone "$1" -b "$3" --depth=1 "$2" || exit 1
+    if [ "$4" != "" ]; then
+      git clone "$1" -b "$3" "$2" || exit 1
+    else
+      git clone "$1" -b "$3" --depth=1 "$2" || exit 1
+    fi
     pushd "$2" >/dev/null || exit 1
+    if [ "$4" != "" ]; then
+      git reset --hard "$4"
+    fi
     echo "Cloned ${1} at commit $(git rev-parse --short=8 HEAD)."
   else
     pushd "$2" >/dev/null || exit 1
   fi
-  git pull --rebase --autostash
+  if [ "$4" == "" ]; then
+    git pull --rebase --autostash
+  fi
   if [ "$2" != "UDK" ] && [ "$(unamer)" != "Windows" ]; then
     sym=$(find . -not -type d -not -path "./coreboot/*" -not -path "./UDK/*" -exec file "{}" ";" | grep CRLF)
     if [ "${sym}" != "" ]; then
@@ -391,7 +400,7 @@ fi
 
 if [ "$NEW_BUILDSYSTEM" != "1" ]; then
   if [ "$OFFLINE_MODE" != "1" ]; then
-    updaterepo "https://github.com/acidanthera/audk" UDK master || exit 1
+    updaterepo "https://github.com/acidanthera/audk" UDK master "${AUDK}" || exit 1
   else
     echo "Working in offline mode. Skip UDK update"
   fi
