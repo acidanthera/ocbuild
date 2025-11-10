@@ -49,7 +49,7 @@ updaterepo() {
   fi
   git pull --rebase --autostash
   if [ "$2" != "UDK" ] && [ "$(unamer)" != "Windows" ]; then
-    sym=$(find . -not -type d -not -path "./coreboot/*" -not -path "./UDK/*" -exec file "{}" ";" | grep CRLF)
+    sym=$(find . -not -type d -not -path "./.git/*" -not -path "./coreboot/*" -not -path "./UDK/*" -exec file "{}" ";" | grep CRLF)
     if [ "${sym}" != "" ]; then
       echo "Repository $1 named $2 contains CRLF line endings"
       echo "$sym"
