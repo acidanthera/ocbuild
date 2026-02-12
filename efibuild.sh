@@ -179,7 +179,10 @@ fi
 
 # On Windows nasm and python may not be in PATH.
 if [ "$(unamer)" = "Windows" ]; then
-  export PATH="/c/Python38:$PATH:/c/Program Files/NASM:/c/tools/ASL"
+  prefix="/mingw64/bin:/usr/bin:"
+  gitbash_path="$PATH"
+  path_without_prefix=${gitbash_path#"$prefix"}
+  export PATH="/c/Python38:$path_without_prefix:/c/Program Files/NASM:/c/tools/ASL"
 fi
 
 if [ "$(nasm -v)" = "" ] || [ "$(nasm -v | grep Apple)" != "" ]; then
@@ -399,7 +402,7 @@ fi
 cd UDK || exit 1
 HASH=$(git rev-parse '@{upstream}')
 
-if [ "$DISCARD_PACKAGES" != "" ]; then 
+if [ "$DISCARD_PACKAGES" != "" ]; then
   for package_to_discard in "${DISCARD_PACKAGES[@]}" ; do
     if [ -d "${package_to_discard}" ]; then
       rm -rf "${package_to_discard}"
