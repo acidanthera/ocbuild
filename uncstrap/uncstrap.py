@@ -198,7 +198,7 @@ def main():
 
     parser.add_argument('--custom-config-path', type=str, dest='custom_config_path', action='store', help='Path to custom uncrustify configuration.')
     group.add_argument('exclude_list_path', nargs="?", type=str, help='Path to uncstrap exclude list.')
-    group.add_argument('--build', dest='build', action='store_true', help='Build uncrustify binary.')
+    group.add_argument('-b', '--build', dest='build', action='store_true', help='Build uncrustify binary.')
     parser.set_defaults(build=False)
     
     args = parser.parse_args()
