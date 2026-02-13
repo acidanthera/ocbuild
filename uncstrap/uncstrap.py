@@ -200,7 +200,7 @@ def main():
     group.add_argument('exclude_list_path', nargs="?", type=str, help='Path to uncstrap exclude list.')
     group.add_argument('-b', '--build', dest='build', action='store_true', help='Build uncrustify binary.')
     parser.set_defaults(build=False)
-    
+
     args = parser.parse_args()
 
     if args.build:
