@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import argparse
 import platform
 import shutil
 import stat
@@ -191,12 +192,33 @@ def run_uncrustify(unc_exec):
 
 
 def main():
-    if sys.argv[1] in ('-b', '--build'):
+    parser = argparse.ArgumentParser(description='Run uncrustify among given project.')
+
+    group = parser.add_mutually_exclusive_group(required=True)
+
+    parser.add_argument('--custom-config-path', type=str, dest='custom_config_path', action='store', help='Path to custom uncrustify configuration.')
+    group.add_argument('exclude_list_path', nargs="?", type=str, help='Path to uncstrap exclude list.')
+    group.add_argument('--build', dest='build', action='store_true', help='Build uncrustify binary.')
+    parser.set_defaults(build=False)
+    
+    args = parser.parse_args()
+
+    if args.build:
         build_uncrustify(UNC_LINK)
         sys.exit(0)
 
-    dump_file_list(sys.argv[1])
-    download_uncrustify_conf()
+    if args.custom_config_path:
+        if not os.path.isfile(args.custom_config_path):
+            parser.error("--custom-config-path is invalid!")
+        shutil.copy(args.custom_config_path, os.getcwd() + "/" + UNC_CONF)
+    else:
+        download_uncrustify_conf()
+
+    if not args.exclude_list_path:
+        parser.error("exclude_list_path is not specified!")
+
+    dump_file_list(args.exclude_list_path)
+
     unc_exec = download_uncrustify_bin()
     run_uncrustify(unc_exec)
 
