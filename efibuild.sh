@@ -394,7 +394,7 @@ fi
 
 if [ "$NEW_BUILDSYSTEM" != "1" ]; then
   if [ "$OFFLINE_MODE" != "1" ]; then
-    updaterepo "https://github.com/acidanthera/audk" UDK master || exit 1
+    updaterepo "https://github.com/acidanthera/audk" UDK new-master5 || exit 1
   else
     echo "Working in offline mode. Skip UDK update"
   fi
