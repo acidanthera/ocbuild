@@ -197,10 +197,10 @@ if [ "$(nasm -v)" = "" ] || [ "$(nasm -v | grep Apple)" != "" ]; then
   fi
   pushd /tmp >/dev/null || exit 1
   rm -rf nasm-mac64.zip
-  curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/nasm-mac64.zip" || exit 1
+  curl -OLf "https://github.com/acidanthera/ocbuild/raw/master/external/nasm-mac64.zip" || exit 1
   nasmzip=$(cat nasm-mac64.zip)
   rm -rf nasm-*
-  curl -OL -g "https://github.com/acidanthera/ocbuild/raw/master/external/${nasmzip}" || exit 1
+  curl -OLf -g "https://github.com/acidanthera/ocbuild/raw/master/external/${nasmzip}" || exit 1
   unzip -q "${nasmzip}" nasm*/nasm nasm*/ndisasm || exit 1
   sudo mkdir -p /usr/local/bin || exit 1
   sudo mv nasm*/nasm /usr/local/bin/ || exit 1
@@ -220,10 +220,10 @@ if [ "$(iasl -v)" = "" ]; then
   fi
   pushd /tmp >/dev/null || exit 1
   rm -rf iasl-macosx.zip
-  curl -OL "https://github.com/acidanthera/ocbuild/raw/master/external/iasl-macosx.zip" || exit 1
+  curl -OLf "https://github.com/acidanthera/ocbuild/raw/master/external/iasl-macosx.zip" || exit 1
   iaslzip=$(cat iasl-macosx.zip)
   rm -rf iasl
-  curl -OL -g "https://github.com/acidanthera/ocbuild/raw/master/external/${iaslzip}" || exit 1
+  curl -OLf -g "https://github.com/acidanthera/ocbuild/raw/master/external/${iaslzip}" || exit 1
   unzip -q "${iaslzip}" iasl || exit 1
   sudo mkdir -p /usr/local/bin || exit 1
   sudo mv iasl /usr/local/bin/ || exit 1
@@ -261,7 +261,7 @@ if ! $valid_mtoc; then
   prompt "Install prebuilt mtoc automatically?"
   pushd /tmp >/dev/null || exit 1
   rm -f mtoc ocmtoc-${MTOC_LATEST_VERSION}-RELEASE.zip
-  curl -OL -g "https://github.com/acidanthera/ocmtoc/releases/download/${MTOC_LATEST_VERSION}/ocmtoc-${MTOC_LATEST_VERSION}-RELEASE.zip" || exit 1
+  curl -OLf -g "https://github.com/acidanthera/ocmtoc/releases/download/${MTOC_LATEST_VERSION}/ocmtoc-${MTOC_LATEST_VERSION}-RELEASE.zip" || exit 1
   unzip -q "ocmtoc-${MTOC_LATEST_VERSION}-RELEASE.zip" mtoc || exit 1
   sudo mkdir -p /usr/local/bin || exit 1
   sudo rm -f /usr/local/bin/mtoc /usr/local/bin/mtoc.NEW || exit 1
