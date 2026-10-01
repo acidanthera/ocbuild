@@ -313,7 +313,7 @@ if [ "${TOOLCHAINS[*]}" = "" ]; then
   if [ "$(unamer)" = "Darwin" ]; then
     TOOLCHAINS=('XCODE5')
   elif [ "$(unamer)" = "Windows" ]; then
-    TOOLCHAINS=('VS2019')
+    TOOLCHAINS=('VS2022')
   else
     TOOLCHAINS=('CLANGPDB' 'GCC')
   fi
@@ -457,22 +457,22 @@ if [ "$(unamer)" = "Windows" ]; then
   echo "Expanded EDK_TOOLS_PATH from ${EDK_TOOLS_PATH} to ${tools}"
   export EDK_TOOLS_PATH="${tools}"
   export BASE_TOOLS_PATH="${tools}"
-  VS2019_BUILDTOOLS=$(vswhere -latest -version '[16.0,18.0)' -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)
-  VS2019_BASEPREFIX="${VS2019_BUILDTOOLS}\\VC\\Tools\\MSVC\\"
+  VS2022_BUILDTOOLS=$(vswhere -latest -version '[16.0,18.0)' -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)
+  VS2022_BASEPREFIX="${VS2022_BUILDTOOLS}\\VC\\Tools\\MSVC\\"
   # Intended to use ls here to get first entry.
   # REF: https://github.com/koalaman/shellcheck/wiki/SC2012
   # shellcheck disable=SC2012
-  cd "${VS2019_BASEPREFIX}" || exit 1
+  cd "${VS2022_BASEPREFIX}" || exit 1
   # Incorrect diagnostic due to action.
   # REF: https://github.com/koalaman/shellcheck/wiki/SC2035
   # shellcheck disable=SC2035
-  VS2019_DIR="$(find * -maxdepth 0 -type d -print -quit)"
-  if [ "${VS2019_DIR}" = "" ]; then
-    echo "No VS2019 MSVC compiler"
+  VS2022_DIR="$(find * -maxdepth 0 -type d -print -quit)"
+  if [ "${VS2022_DIR}" = "" ]; then
+    echo "No VS2022 MSVC compiler"
     exit 1
   fi
   cd - || exit 1
-  export VS2019_PREFIX="${VS2019_BASEPREFIX}${VS2019_DIR}\\"
+  export VS2022_PREFIX="${VS2022_BASEPREFIX}${VS2022_DIR}\\"
 
   WINSDK_BASE="/c/Program Files (x86)/Windows Kits/10/bin"
   if [ -d "${WINSDK_BASE}" ]; then
@@ -504,7 +504,7 @@ for k,v in envs.items():
     v = ":".join(subprocess.check_output(["cygpath","-u",p]).decode("ascii").rstrip() for p in v.split(";"))
     v = v.replace("'\''",r"'\'\\\'\''")
     print("export %(k)s='\''%(v)s'\''" % locals())
-' "${VS2019_BUILDTOOLS}\\Common7\\Tools\\VsDevCmd.bat" '-arch=amd64')"
+' "${VS2022_BUILDTOOLS}\\Common7\\Tools\\VsDevCmd.bat" '-arch=amd64')"
 fi
 
 if [ "$NEW_BUILDSYSTEM" != "1" ]; then
