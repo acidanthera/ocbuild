@@ -179,9 +179,7 @@ fi
 
 # On Windows nasm and python may not be in PATH.
 if [ "$(unamer)" = "Windows" ]; then
-  prefix="/mingw64/bin:/usr/bin:"
-  gitbash_path="$PATH"
-  path_without_prefix=${gitbash_path#"$prefix"}
+  path_without_prefix=${PATH#*/usr/bin:}
   export PATH="/c/Python38:$path_without_prefix:/c/Program Files/NASM:/c/tools/ASL"
 fi
 
